@@ -2,13 +2,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/tile_data.dart';
 import '../models/best_photo.dart';
 import '../services/image_service.dart';
+import '../services/firestore_service.dart';
 
 final tilesProvider = StateNotifierProvider<TilesNotifier, Map<String, TileData>>((ref) {
   return TilesNotifier();
 });
 
 class TilesNotifier extends StateNotifier<Map<String, TileData>> {
-  TilesNotifier() : super({});
+  TilesNotifier() : super({}) {
+    _loadFromFirestore();
+  }
+
+  // Firestoreからロード
+  Future<void> _loadFromFirestore() async {
+    try {
+      final tiles = await FirestoreService.fetchAllTiles();
+      state = tiles;
+    } catch (e) {
+      // オフライン時はローカル状態を維持
+    }
+  }
 
   Future<void> pickAndRegisterPhoto(String themeId, {bool fromFiles = false}) async {
     final path = fromFiles
@@ -31,26 +44,26 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
       if (existing?.currentBest != null) existing!.currentBest!,
     ];
 
-    state = {
-      ...state,
-      themeId: TileData(
-        themeId: themeId,
-        currentBest: newPhoto,
-        history: newHistory,
-      ),
-    };
+    final newTile = TileData(
+      themeId: themeId,
+      currentBest: newPhoto,
+      history: newHistory,
+    );
+
+    state = {...state, themeId: newTile};
+    await FirestoreService.saveTile(themeId, newTile);
   }
 
   Future<void> updatePhotoMeta(String themeId, BestPhoto updated) async {
     final existing = state[themeId];
     if (existing == null) return;
-    state = {
-      ...state,
-      themeId: existing.copyWith(currentBest: updated),
-    };
+
+    final newTile = existing.copyWith(currentBest: updated);
+    state = {...state, themeId: newTile};
+    await FirestoreService.saveTile(themeId, newTile);
   }
 
-  void restoreFromHistory(String themeId, int historyIndex) {
+  void restoreFromHistory(String themeId, int historyIndex) async {
     final existing = state[themeId];
     if (existing == null || existing.currentBest == null) return;
 
@@ -59,14 +72,14 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
       ..removeAt(historyIndex)
       ..add(existing.currentBest!);
 
-    state = {
-      ...state,
-      themeId: TileData(
-        themeId: themeId,
-        currentBest: historyPhoto,
-        history: newHistory,
-      ),
-    };
+    final newTile = TileData(
+      themeId: themeId,
+      currentBest: historyPhoto,
+      history: newHistory,
+    );
+
+    state = {...state, themeId: newTile};
+    await FirestoreService.saveTile(themeId, newTile);
   }
 }
 
