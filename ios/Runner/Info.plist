@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ダイビングのベスト写真を登録するために、フォトライブラリへのアクセスが必要です。</string>
+	<key>NSCameraUsageDescription</key>
+	<string>ダイビングのベスト写真を撮影するために、カメラへのアクセスが必要です。</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>写真をフォトライブラリに保存するために、アクセスが必要です。</string>
 </dict>
 </plist>
