@@ -6,10 +6,20 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.hikaru.mybestdiveshot
+      vars:
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
       flutter: stable
       xcode: latest
       cocoapods: default
     scripts:
+      - name: Set up App Store Connect API key
+        script: |
+          app-store-connect fetch-signing-files \
+            com.hikaru.mybestdiveshot \
+            --type IOS_APP_STORE \
+            --create
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
