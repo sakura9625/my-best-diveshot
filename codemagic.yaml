@@ -6,7 +6,6 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.hikaru.mybestdiveshot
-        provisioning_profile: mybestdiveshot_appstore
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -16,7 +15,8 @@ workflows:
           flutter packages pub get
       - name: Set up code signing settings on Xcode project
         script: |
-          xcode-project use-profiles
+          xcode-project use-profiles \
+            --profile mybestdiveshot_appstore
       - name: Flutter build ipa
         script: |
           flutter build ipa --release \
