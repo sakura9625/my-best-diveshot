@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/themes.dart';
 import '../../providers/tiles_provider.dart';
 import '../detail/detail_screen.dart';
@@ -76,7 +77,10 @@ class HomeScreen extends ConsumerWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => DetailScreen(theme: theme),
+                        builder: (_) => DetailScreen(
+                          theme: theme,
+                          initialIndex: index,
+                        ),
                       ),
                     );
                   },
@@ -123,7 +127,15 @@ class HomeScreen extends ConsumerWidget {
                         : Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.set_meal, color: Colors.white38, size: 20),
+                              SvgPicture.asset(
+                                'assets/icons/fish-solid-full.svg',
+                                width: 22,
+                                height: 22,
+                                colorFilter: const ColorFilter.mode(
+                                  Colors.white38,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
                               const SizedBox(height: 4),
                               Text(
                                 theme.name,
