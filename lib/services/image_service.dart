@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -21,9 +22,8 @@ class ImageService {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: false,
-      allowCompression: true,
-      withData: false,
-      withReadStream: false,
+      allowCompression: false,
+      onFileLoading: (FilePickerStatus status) => debugPrint(status.toString()),
     );
     if (result == null || result.files.isEmpty) return null;
     final path = result.files.first.path;
