@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/tile_data.dart';
 import '../models/best_photo.dart';
@@ -49,7 +50,7 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
       registeredAt: DateTime.now(),
     );
 
-    final newHistory = <BestPhoto>[
+    final newHistory = [
       ...existing?.history ?? [],
       if (existing?.currentBest != null) existing!.currentBest!,
     ];
@@ -60,8 +61,13 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
       history: newHistory,
     );
 
+    // 先にstateを更新してUIに即反映
     state = {...state, themeId: newTile};
-    await FirestoreService.saveTile(themeId, newTile);
+
+    // その後Firestoreに非同期保存
+    FirestoreService.saveTile(themeId, newTile).catchError((e) {
+      debugPrint('Firestore save error: $e');
+    });
   }
 
   Future<void> updatePhotoMeta(String themeId, BestPhoto updated) async {
