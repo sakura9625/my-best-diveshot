@@ -21,6 +21,9 @@ class ImageService {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: false,
+      allowCompression: true,
+      withData: false,
+      withReadStream: false,
     );
     if (result == null || result.files.isEmpty) return null;
     final path = result.files.first.path;
