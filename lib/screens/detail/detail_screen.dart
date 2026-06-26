@@ -339,6 +339,9 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                     const SizedBox(height: 20),
                     _buildMonthField(context, photo, hasPhoto),
                     const SizedBox(height: 20),
+                    if (hasPhoto && photo != null)
+                      _buildKingHistoryCard(photo, tile),
+                    const SizedBox(height: 20),
                     _buildUnderlineField(
                       label: '思い出コメント',
                       value: photo?.comment ?? '',
@@ -550,6 +553,102 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
               ),
       ],
     );
+  }
+
+  Widget _buildKingHistoryCard(BestPhoto photo, TileData? tile) {
+    final isKing = tile?.isKing ?? false;
+    final now = DateTime.now();
+
+    String message;
+    if (!isKing) {
+      message = '📸 仮登録中 - 王者に認定しましょう';
+    } else if (photo.isRestored) {
+      message = '👑 王者返り咲き！';
+    } else if ((tile?.history ?? []).isEmpty) {
+      message = '👑 新しい王者が誕生しました';
+    } else {
+      message = '👑 王者が交代しました';
+    }
+
+    final crownCountText = isKing && photo.crownCount > 0
+        ? '${photo.crownCount}代目の王者'
+        : null;
+
+    String? daysFromShot;
+    if (photo.shotDate != null) {
+      final days = now.difference(photo.shotDate!).inDays;
+      daysFromShot = '初撮影から $days 日';
+    }
+
+    String? reignDays;
+    if (isKing && photo.crownedAt != null) {
+      final days = now.difference(photo.crownedAt!).inDays;
+      reignDays = '在任 $days 日';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isKing ? const Color(0xFF00B4D8).withOpacity(0.4) : Colors.white12,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            message,
+            style: TextStyle(
+              color: isKing ? const Color(0xFF00B4D8) : Colors.white54,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (crownCountText != null) ...[
+            const SizedBox(height: 4),
+            Text(crownCountText, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          ],
+          if (daysFromShot != null || reignDays != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                if (daysFromShot != null)
+                  Text(daysFromShot, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                if (daysFromShot != null && reignDays != null)
+                  const Text('　', style: TextStyle(color: Colors.white24)),
+                if (reignDays != null)
+                  Text(reignDays, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+              ],
+            ),
+          ],
+          const SizedBox(height: 8),
+          if (photo.shotDate != null)
+            _buildHistoryRow('撮影日', _formatDate(photo.shotDate)),
+          if (isKing && photo.crownedAt != null)
+            _buildHistoryRow('即位日', _formatDate(photo.crownedAt)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        children: [
+          Text('$label：', style: const TextStyle(color: Colors.white38, fontSize: 12)),
+          Text(value, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return '不明';
+    return '${date.year}年${date.month}月${date.day}日';
   }
 
   Widget _buildHistoryItem(BestPhoto photo, int index, String themeId) {

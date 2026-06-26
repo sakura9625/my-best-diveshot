@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:exif/exif.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -24,16 +25,46 @@ class ImageService {
     return '$dir/$fileName';
   }
 
-  static Future<String?> pickFromGallery(String themeId) async {
+  static Future<DateTime?> extractShotDate(String filePath) async {
+    try {
+      final bytes = await File(filePath).readAsBytes();
+      final data = await readExifFromBytes(bytes);
+      if (data.isEmpty) return null;
+
+      final dateStr = data['EXIF DateTimeOriginal']?.printable ??
+          data['Image DateTime']?.printable;
+      if (dateStr == null) return null;
+
+      // EXIF日付形式: "2025:03:15 10:30:00"
+      final parts = dateStr.split(' ');
+      if (parts.isEmpty) return null;
+      final dateParts = parts[0].split(':');
+      if (dateParts.length < 3) return null;
+
+      return DateTime(
+        int.parse(dateParts[0]),
+        int.parse(dateParts[1]),
+        int.parse(dateParts[2]),
+      );
+    } catch (e) {
+      debugPrint('EXIF read error: $e');
+      return null;
+    }
+  }
+
+  static Future<ImagePickResult?> pickFromGallery(String themeId) async {
     final XFile? picked = await _picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
     );
     if (picked == null) return null;
-    return _saveImage(picked.path, themeId);
+
+    final shotDate = await extractShotDate(picked.path);
+    final fileName = await _saveImage(picked.path, themeId);
+    return ImagePickResult(fileName: fileName, shotDate: shotDate);
   }
 
-  static Future<String?> pickFromFiles(String themeId) async {
+  static Future<ImagePickResult?> pickFromFiles(String themeId) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: false,
@@ -41,7 +72,10 @@ class ImageService {
     if (result == null || result.files.isEmpty) return null;
     final path = result.files.first.path;
     if (path == null) return null;
-    return _saveImage(path, themeId);
+
+    final shotDate = await extractShotDate(path);
+    final fileName = await _saveImage(path, themeId);
+    return ImagePickResult(fileName: fileName, shotDate: shotDate);
   }
 
   static Future<String> _saveImage(String sourcePath, String themeId) async {
@@ -51,4 +85,10 @@ class ImageService {
     await File(sourcePath).copy(destPath);
     return fileName;
   }
+}
+
+class ImagePickResult {
+  final String fileName;
+  final DateTime? shotDate;
+  const ImagePickResult({required this.fileName, required this.shotDate});
 }

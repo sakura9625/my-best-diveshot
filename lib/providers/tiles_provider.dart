@@ -26,17 +26,18 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
   }
 
   Future<void> pickAndRegisterPhoto(String themeId, {bool fromFiles = false}) async {
-    final path = fromFiles
+    final result = fromFiles
         ? await ImageService.pickFromFiles(themeId)
         : await ImageService.pickFromGallery(themeId);
-    if (path == null) return;
+    if (result == null) return;
 
     final existing = state[themeId];
     final newPhoto = BestPhoto(
-      fileName: path,
+      fileName: result.fileName,
       subjectName: '',
       title: '',
       location: '',
+      shotDate: result.shotDate,
       comment: '',
       registeredAt: DateTime.now(),
     );
@@ -59,7 +60,23 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     if (existing == null || existing.currentBest == null) return;
     if (existing.isKing) return;
 
-    final newTile = existing.copyWith(status: TileStatus.king);
+    final prevCrownCount = existing.history.isNotEmpty
+        ? existing.history.map((h) => h.crownCount).reduce((a, b) => a > b ? a : b)
+        : 0;
+
+    final crowned = existing.currentBest!.copyWith(
+      crownedAt: DateTime.now(),
+      crownCount: prevCrownCount + 1,
+      isRestored: false,
+    );
+
+    final newTile = TileData(
+      themeId: themeId,
+      currentBest: crowned,
+      status: TileStatus.king,
+      history: existing.history,
+    );
+
     state = {...state, themeId: newTile};
     FirestoreService.saveTile(themeId, newTile).catchError((e) {
       debugPrint('Firestore save error: $e');
@@ -67,17 +84,18 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
   }
 
   Future<void> updateKing(String themeId, {bool fromFiles = false}) async {
-    final path = fromFiles
+    final result = fromFiles
         ? await ImageService.pickFromFiles(themeId)
         : await ImageService.pickFromGallery(themeId);
-    if (path == null) return;
+    if (result == null) return;
 
     final existing = state[themeId];
     final newPhoto = BestPhoto(
-      fileName: path,
+      fileName: result.fileName,
       subjectName: '',
       title: '',
       location: '',
+      shotDate: result.shotDate,
       comment: '',
       registeredAt: DateTime.now(),
     );
@@ -115,13 +133,23 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     if (existing == null || existing.currentBest == null) return;
 
     final historyPhoto = existing.history[historyIndex];
+    final prevCrownCount = existing.history.isNotEmpty
+        ? existing.history.map((h) => h.crownCount).reduce((a, b) => a > b ? a : b)
+        : 0;
+
+    final restored = historyPhoto.copyWith(
+      crownedAt: DateTime.now(),
+      crownCount: prevCrownCount + 1,
+      isRestored: true,
+    );
+
     final newHistory = List<BestPhoto>.from(existing.history)
       ..removeAt(historyIndex)
       ..add(existing.currentBest!);
 
     final newTile = TileData(
       themeId: themeId,
-      currentBest: historyPhoto,
+      currentBest: restored,
       status: TileStatus.king,
       history: newHistory,
     );
