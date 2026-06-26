@@ -236,7 +236,13 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
-                onTap: () => _showImageSourcePicker(theme.id),
+                onTap: () {
+                  if (tile?.isKing == true) {
+                    ref.read(tilesProvider.notifier).updateKing(theme.id);
+                  } else {
+                    ref.read(tilesProvider.notifier).pickAndRegisterPhoto(theme.id);
+                  }
+                },
                 child: hasPhoto && photo != null
                     ? AspectRatio(
                         aspectRatio: 4 / 3,
@@ -260,7 +266,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: OutlinedButton.icon(
-                  onPressed: () => _showImageSourcePicker(theme.id),
+                  onPressed: () => ref.read(tilesProvider.notifier).updateKing(theme.id),
                   icon: const Icon(Icons.swap_horiz, color: Color(0xFF00B4D8), size: 18),
                   label: const Text('王者を更新する', style: TextStyle(color: Color(0xFF00B4D8))),
                   style: OutlinedButton.styleFrom(
@@ -288,6 +294,22 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                     child: Text(
                       _isEditing ? '保存' : '編集',
                       style: const TextStyle(color: Colors.white, fontSize: 13),
+                    ),
+                  ),
+                ),
+              if (hasPhoto && tile?.isProvisional == true)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      ref.read(tilesProvider.notifier).crownAsKing(theme.id);
+                    },
+                    icon: const Text('👑', style: TextStyle(fontSize: 16)),
+                    label: const Text('王者に認定する'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00B4D8),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 44),
                     ),
                   ),
                 ),

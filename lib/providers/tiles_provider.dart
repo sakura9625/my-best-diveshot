@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/tile_data.dart';
 import '../models/best_photo.dart';
@@ -16,21 +16,12 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
 
   List<int> _previousBingoLines = [];
 
-  List<int> getNewlyCompletedLines(List<int> currentLines) {
-    final newLines = currentLines
-        .where((line) => !_previousBingoLines.contains(line))
-        .toList();
-    _previousBingoLines = List.from(currentLines);
-    return newLines;
-  }
-
-  // Firestoreからロード
   Future<void> _loadFromFirestore() async {
     try {
       final tiles = await FirestoreService.fetchAllTiles();
       state = tiles;
     } catch (e) {
-      // オフライン時はローカル状態を維持
+      debugPrint('Firestore load error: $e');
     }
   }
 
@@ -50,21 +41,60 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
       registeredAt: DateTime.now(),
     );
 
+    final newTile = TileData(
+      themeId: themeId,
+      currentBest: newPhoto,
+      status: TileStatus.provisional,
+      history: existing?.history ?? [],
+    );
+
+    state = {...state, themeId: newTile};
+    FirestoreService.saveTile(themeId, newTile).catchError((e) {
+      debugPrint('Firestore save error: $e');
+    });
+  }
+
+  Future<void> crownAsKing(String themeId) async {
+    final existing = state[themeId];
+    if (existing == null || existing.currentBest == null) return;
+    if (existing.isKing) return;
+
+    final newTile = existing.copyWith(status: TileStatus.king);
+    state = {...state, themeId: newTile};
+    FirestoreService.saveTile(themeId, newTile).catchError((e) {
+      debugPrint('Firestore save error: $e');
+    });
+  }
+
+  Future<void> updateKing(String themeId, {bool fromFiles = false}) async {
+    final path = fromFiles
+        ? await ImageService.pickFromFiles(themeId)
+        : await ImageService.pickFromGallery(themeId);
+    if (path == null) return;
+
+    final existing = state[themeId];
+    final newPhoto = BestPhoto(
+      fileName: path,
+      subjectName: '',
+      title: '',
+      location: '',
+      comment: '',
+      registeredAt: DateTime.now(),
+    );
+
     final newHistory = [
       ...existing?.history ?? [],
-      if (existing?.currentBest != null) existing!.currentBest!,
+      if (existing?.isKing == true) existing!.currentBest!,
     ];
 
     final newTile = TileData(
       themeId: themeId,
       currentBest: newPhoto,
+      status: TileStatus.provisional,
       history: newHistory,
     );
 
-    // 先にstateを更新してUIに即反映
     state = {...state, themeId: newTile};
-
-    // その後Firestoreに非同期保存
     FirestoreService.saveTile(themeId, newTile).catchError((e) {
       debugPrint('Firestore save error: $e');
     });
@@ -73,13 +103,14 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
   Future<void> updatePhotoMeta(String themeId, BestPhoto updated) async {
     final existing = state[themeId];
     if (existing == null) return;
-
     final newTile = existing.copyWith(currentBest: updated);
     state = {...state, themeId: newTile};
-    await FirestoreService.saveTile(themeId, newTile);
+    FirestoreService.saveTile(themeId, newTile).catchError((e) {
+      debugPrint('Firestore save error: $e');
+    });
   }
 
-  void restoreFromHistory(String themeId, int historyIndex) async {
+  void restoreFromHistory(String themeId, int historyIndex) {
     final existing = state[themeId];
     if (existing == null || existing.currentBest == null) return;
 
@@ -91,15 +122,26 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     final newTile = TileData(
       themeId: themeId,
       currentBest: historyPhoto,
+      status: TileStatus.king,
       history: newHistory,
     );
 
     state = {...state, themeId: newTile};
-    await FirestoreService.saveTile(themeId, newTile);
+    FirestoreService.saveTile(themeId, newTile).catchError((e) {
+      debugPrint('Firestore save error: $e');
+    });
+  }
+
+  List<int> getNewlyCompletedLines(List<int> currentLines) {
+    final newLines = currentLines
+        .where((line) => !_previousBingoLines.contains(line))
+        .toList();
+    _previousBingoLines = List.from(currentLines);
+    return newLines;
   }
 }
 
 final completedCountProvider = Provider<int>((ref) {
   final tiles = ref.watch(tilesProvider);
-  return tiles.values.where((t) => t.hasPhoto).length;
+  return tiles.values.where((t) => t.isKing).length;
 });

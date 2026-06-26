@@ -117,9 +117,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               color: const Color(0xFF1A1A2E),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: hasPhoto
+                                color: tile?.isKing == true
                                     ? const Color(0xFF00B4D8)
-                                    : Colors.white12,
+                                    : tile?.isProvisional == true
+                                        ? Colors.white38
+                                        : Colors.white12,
                               ),
                             ),
                             child: hasPhoto && fileName != null

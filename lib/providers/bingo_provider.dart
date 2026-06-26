@@ -10,7 +10,7 @@ final completedBingoLinesProvider = Provider<List<int>>((ref) {
     final line = kBingoLines[i];
     final isCompleted = line.every((index) {
       final themeId = kThemes[index].id;
-      return tiles[themeId]?.hasPhoto ?? false;
+      return tiles[themeId]?.isKing ?? false;
     });
     if (isCompleted) completedLines.add(i);
   }
