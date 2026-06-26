@@ -13,6 +13,16 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     _loadFromFirestore();
   }
 
+  List<int> _previousBingoLines = [];
+
+  List<int> getNewlyCompletedLines(List<int> currentLines) {
+    final newLines = currentLines
+        .where((line) => !_previousBingoLines.contains(line))
+        .toList();
+    _previousBingoLines = List.from(currentLines);
+    return newLines;
+  }
+
   // Firestoreからロード
   Future<void> _loadFromFirestore() async {
     try {
