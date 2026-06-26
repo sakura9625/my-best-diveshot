@@ -60,33 +60,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
   }
 
   Future<void> _showImageSourcePicker(String themeId) async {
-    await showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1A1A2E),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library, color: Colors.white),
-              title: const Text('カメラロールから選ぶ', style: TextStyle(color: Colors.white)),
-              onTap: () async {
-                Navigator.pop(context);
-                await ref.read(tilesProvider.notifier).pickAndRegisterPhoto(themeId);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.folder_open, color: Colors.white),
-              title: const Text('ファイルから選ぶ（Dropboxなど）', style: TextStyle(color: Colors.white)),
-              onTap: () async {
-                Navigator.pop(context);
-                await ref.read(tilesProvider.notifier).pickAndRegisterPhoto(themeId, fromFiles: true);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+    await ref.read(tilesProvider.notifier).pickAndRegisterPhoto(themeId);
   }
 
   Future<void> _pickMonth(BuildContext context) async {
