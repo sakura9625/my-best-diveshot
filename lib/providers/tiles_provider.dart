@@ -31,7 +31,7 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
 
     final existing = state[themeId];
     final newPhoto = BestPhoto(
-      localImagePath: path,
+      fileName: path,
       subjectName: '',
       title: '',
       location: '',

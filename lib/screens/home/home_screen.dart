@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/themes.dart';
 import '../../providers/tiles_provider.dart';
+import '../../widgets/resolved_image.dart';
 import '../detail/detail_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -70,7 +70,7 @@ class HomeScreen extends ConsumerWidget {
                 final theme = kThemes[index];
                 final tile = tiles[theme.id];
                 final hasPhoto = tile?.hasPhoto ?? false;
-                final imagePath = tile?.currentBest?.localImagePath;
+                final fileName = tile?.currentBest?.fileName;
 
                 return GestureDetector(
                   onTap: () {
@@ -92,14 +92,14 @@ class HomeScreen extends ConsumerWidget {
                         color: hasPhoto ? const Color(0xFF00B4D8) : Colors.white12,
                       ),
                     ),
-                    child: hasPhoto && imagePath != null
+                    child: hasPhoto && fileName != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(6),
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
-                                Image.file(
-                                  File(imagePath),
+                                ResolvedImage(
+                                  fileName: fileName,
                                   fit: BoxFit.cover,
                                 ),
                                 Positioned(

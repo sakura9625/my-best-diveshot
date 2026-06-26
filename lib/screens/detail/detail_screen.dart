@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +6,7 @@ import '../../constants/app_config.dart';
 import '../../models/tile_data.dart';
 import '../../models/best_photo.dart';
 import '../../providers/tiles_provider.dart';
+import '../../widgets/resolved_image.dart';
 
 class DetailScreen extends ConsumerStatefulWidget {
   final ThemeDefinition theme;
@@ -176,7 +176,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
   Future<void> _saveEdits(TileData tile) async {
     final current = tile.currentBest!;
     final updated = BestPhoto(
-      localImagePath: current.localImagePath,
+      fileName: current.fileName,
       subjectName: '',
       title: _titleController.text,
       location: _locationController.text,
@@ -266,7 +266,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                 child: hasPhoto && photo != null
                     ? AspectRatio(
                         aspectRatio: 4 / 3,
-                        child: Image.file(File(photo.localImagePath), fit: BoxFit.cover),
+                        child: ResolvedImage(fileName: photo.fileName, fit: BoxFit.cover),
                       )
                     : AspectRatio(
                         aspectRatio: 4 / 3,
@@ -424,7 +424,11 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                         Expanded(
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.file(File(p.localImagePath), fit: BoxFit.cover, width: double.infinity),
+                            child: ResolvedImage(
+                              fileName: p.fileName,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -568,12 +572,12 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
           AppConfig.isProUser
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: Image.file(
-                    File(photo.localImagePath),
+                  child: ResolvedImage(
+                    fileName: photo.fileName,
                     width: 48,
                     height: 48,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    errorWidget: Container(
                       width: 48,
                       height: 48,
                       color: Colors.white12,

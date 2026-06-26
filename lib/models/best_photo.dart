@@ -1,5 +1,5 @@
 class BestPhoto {
-  final String localImagePath;
+  final String fileName;
   final String subjectName;
   final String title;
   final String location;
@@ -8,7 +8,7 @@ class BestPhoto {
   final DateTime registeredAt;
 
   const BestPhoto({
-    required this.localImagePath,
+    required this.fileName,
     required this.subjectName,
     required this.title,
     required this.location,
@@ -18,7 +18,7 @@ class BestPhoto {
   });
 
   Map<String, dynamic> toMap() => {
-    'localImagePath': localImagePath,
+    'fileName': fileName,
     'subjectName': subjectName,
     'title': title,
     'location': location,
@@ -28,14 +28,25 @@ class BestPhoto {
   };
 
   factory BestPhoto.fromMap(Map<String, dynamic> data) => BestPhoto(
-    localImagePath: data['localImagePath'] ?? '',
+    fileName: _extractFileName(
+      data['fileName'] ?? data['localImagePath'] ?? '',
+    ),
     subjectName: data['subjectName'] ?? '',
     title: data['title'] ?? '',
     location: data['location'] ?? '',
-    divingMonth: data['divingMonth'] != null ? DateTime.parse(data['divingMonth']) : null,
+    divingMonth: data['divingMonth'] != null
+        ? DateTime.parse(data['divingMonth'])
+        : null,
     comment: data['comment'] ?? '',
     registeredAt: data['registeredAt'] != null
         ? DateTime.parse(data['registeredAt'])
         : DateTime.now(),
   );
+
+  static String _extractFileName(String fileNameOrPath) {
+    if (fileNameOrPath.contains('/')) {
+      return fileNameOrPath.split('/').last;
+    }
+    return fileNameOrPath;
+  }
 }

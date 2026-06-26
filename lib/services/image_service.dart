@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -8,6 +8,21 @@ import 'package:uuid/uuid.dart';
 class ImageService {
   static final ImagePicker _picker = ImagePicker();
   static const Uuid _uuid = Uuid();
+
+  static Future<String> getAppDocDir() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return dir.path;
+  }
+
+  static Future<String> resolveImagePath(String fileNameOrPath) async {
+    if (!fileNameOrPath.contains('/')) {
+      final dir = await getAppDocDir();
+      return '$dir/$fileNameOrPath';
+    }
+    final fileName = fileNameOrPath.split('/').last;
+    final dir = await getAppDocDir();
+    return '$dir/$fileName';
+  }
 
   static Future<String?> pickFromGallery(String themeId) async {
     final XFile? picked = await _picker.pickImage(
@@ -22,8 +37,6 @@ class ImageService {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: false,
-      allowCompression: false,
-      onFileLoading: (FilePickerStatus status) => debugPrint(status.toString()),
     );
     if (result == null || result.files.isEmpty) return null;
     final path = result.files.first.path;
@@ -36,6 +49,6 @@ class ImageService {
     final fileName = '${themeId}_${_uuid.v4()}.jpg';
     final destPath = '${dir.path}/$fileName';
     await File(sourcePath).copy(destPath);
-    return destPath;
+    return fileName;
   }
 }
