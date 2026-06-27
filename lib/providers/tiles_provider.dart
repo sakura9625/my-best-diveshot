@@ -143,7 +143,7 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
       isRestored: true,
     );
 
-    final newHistory = List<BestPhoto>.from(existing.history)
+    final newHistory = <BestPhoto>[...existing.history]
       ..removeAt(historyIndex)
       ..add(existing.currentBest!);
 
