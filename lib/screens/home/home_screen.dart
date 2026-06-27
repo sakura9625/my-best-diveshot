@@ -143,9 +143,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     child: Stack(
                                       fit: StackFit.expand,
                                       children: [
-                                        ResolvedImage(
-                                          fileName: fileName,
-                                          fit: BoxFit.cover,
+                                        ColorFiltered(
+                                          colorFilter: tile?.isKing == true
+                                              ? const ColorFilter.mode(Colors.transparent, BlendMode.dst)
+                                              : const ColorFilter.matrix([
+                                                  0.2126, 0.7152, 0.0722, 0, 0,
+                                                  0.2126, 0.7152, 0.0722, 0, 0,
+                                                  0.2126, 0.7152, 0.0722, 0, 0,
+                                                  0,      0,      0,      1, 0,
+                                                ]),
+                                          child: ResolvedImage(
+                                            fileName: fileName,
+                                            fit: BoxFit.cover,
+                                          ),
                                         ),
                                         Positioned(
                                           bottom: 0,
@@ -254,6 +264,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _buildLockedSlot(),
             ],
           ),
+          const SizedBox(height: 8),
+          const Divider(height: 1, color: Colors.white12),
         ],
       ),
     );

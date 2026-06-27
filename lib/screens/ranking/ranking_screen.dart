@@ -6,6 +6,7 @@ import '../../providers/tiles_provider.dart';
 import '../../providers/ranking_provider.dart';
 import '../../providers/sheet_provider.dart';
 import '../../widgets/resolved_image.dart';
+import '../../widgets/sheet_tab_bar.dart';
 
 class RankingScreen extends ConsumerWidget {
   const RankingScreen({super.key});
@@ -51,16 +52,21 @@ class RankingScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: rankedIds.isEmpty && provisionalIds.isEmpty
-          ? const Center(
-              child: Text(
-                '写真を登録するとランキングが表示されます',
-                style: TextStyle(color: Colors.white38, fontSize: 14),
-              ),
-            )
-          : ReorderableListView.builder(
-              padding: const EdgeInsets.all(12),
-              onReorder: (oldIndex, newIndex) {
+      body: Column(
+        children: [
+          const SheetTabBar(),
+          const Divider(height: 1, color: Colors.white12),
+          Expanded(
+            child: rankedIds.isEmpty && provisionalIds.isEmpty
+                ? const Center(
+                    child: Text(
+                      '写真を登録するとランキングが表示されます',
+                      style: TextStyle(color: Colors.white38, fontSize: 14),
+                    ),
+                  )
+                : ReorderableListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    onReorder: (oldIndex, newIndex) {
                 if (oldIndex < rankedIds.length && newIndex <= rankedIds.length) {
                   final allRanking = ref.read(rankingProvider);
                   final kingOldIndex = allRanking.indexOf(rankedIds[oldIndex]);
@@ -106,7 +112,10 @@ class RankingScreen extends ConsumerWidget {
                   },
                 );
               },
-            ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

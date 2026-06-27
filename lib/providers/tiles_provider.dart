@@ -91,6 +91,10 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     if (result == null) return;
 
     final existing = state[themeId];
+    final prevCrownCount = existing?.history.isNotEmpty == true
+        ? existing!.history.map((h) => h.crownCount).reduce((a, b) => a > b ? a : b)
+        : existing?.currentBest?.crownCount ?? 0;
+
     final newPhoto = BestPhoto(
       fileName: result.fileName,
       subjectName: '',
@@ -99,6 +103,9 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
       shotDate: result.shotDate,
       comment: '',
       registeredAt: DateTime.now(),
+      crownedAt: DateTime.now(),
+      crownCount: prevCrownCount + 1,
+      isRestored: false,
     );
 
     final newHistory = <BestPhoto>[
@@ -109,7 +116,7 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     final newTile = TileData(
       themeId: themeId,
       currentBest: newPhoto,
-      status: TileStatus.provisional,
+      status: TileStatus.king,
       history: newHistory,
     );
 

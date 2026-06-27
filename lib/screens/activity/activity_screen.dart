@@ -8,6 +8,7 @@ import '../../providers/tiles_provider.dart';
 import '../../providers/bingo_provider.dart';
 import '../../providers/sheet_provider.dart';
 import '../../widgets/resolved_image.dart';
+import '../../widgets/sheet_tab_bar.dart';
 
 class ActivityScreen extends ConsumerWidget {
   const ActivityScreen({super.key});
@@ -32,33 +33,41 @@ class ActivityScreen extends ConsumerWidget {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: Column(
         children: [
-          _buildSectionTitle('📊 ステータス'),
-          const SizedBox(height: 8),
-          _buildStatusGrid(kingTiles.length, provisionalTiles.length, emptyCount, tiles),
-          const SizedBox(height: 24),
+          const SheetTabBar(),
+          const Divider(height: 1, color: Colors.white12),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildSectionTitle('📊 ステータス'),
+                const SizedBox(height: 8),
+                _buildStatusGrid(kingTiles.length, provisionalTiles.length, emptyCount, tiles),
+                const SizedBox(height: 24),
 
-          _buildSectionTitle('🎯 ビンゴ'),
-          const SizedBox(height: 8),
-          _buildBingoSection(bingoLines, isComplete, tiles),
-          const SizedBox(height: 24),
+                _buildSectionTitle('🎯 ビンゴ'),
+                const SizedBox(height: 8),
+                _buildBingoSection(bingoLines, isComplete, tiles),
+                const SizedBox(height: 24),
 
-          _buildSectionTitle('👑 王者ストーリー'),
-          const SizedBox(height: 8),
-          _buildTwoColumnGrid(_buildKingStories(tiles, kingTiles)),
-          const SizedBox(height: 24),
+                _buildSectionTitle('👑 王者ストーリー'),
+                const SizedBox(height: 8),
+                _buildTwoColumnGrid(_buildKingStories(tiles, kingTiles)),
+                const SizedBox(height: 24),
 
-          _buildSectionTitle('⚔️ 激戦・記録'),
-          const SizedBox(height: 8),
-          _buildTwoColumnGrid(_buildBattleStats(tiles)),
-          const SizedBox(height: 24),
+                _buildSectionTitle('⚔️ 激戦・記録'),
+                const SizedBox(height: 8),
+                _buildTwoColumnGrid(_buildBattleStats(tiles)),
+                const SizedBox(height: 24),
 
-          _buildSectionTitle('📅 撮影記録'),
-          const SizedBox(height: 8),
-          _buildTwoColumnGrid(_buildShotStats(tiles)),
-          const SizedBox(height: 32),
+                _buildSectionTitle('📅 撮影記録'),
+                const SizedBox(height: 8),
+                _buildTwoColumnGrid(_buildShotStats(tiles)),
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -411,42 +420,45 @@ class ActivityScreen extends ConsumerWidget {
   Widget _buildPhotoCard(String label, BestPhoto photo, String themeName, String subtitle) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A2E),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: ResolvedImage(
-              fileName: photo.fileName,
-              width: 56,
-              height: 56,
-              fit: BoxFit.cover,
-              errorWidget: Container(
-                width: 56,
-                height: 56,
-                color: Colors.white12,
-                child: const Icon(Icons.image_not_supported, color: Colors.white24),
+          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: ResolvedImage(
+                  fileName: photo.fileName,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorWidget: Container(
+                    width: 40,
+                    height: 40,
+                    color: Colors.white12,
+                    child: const Icon(Icons.image_not_supported, color: Colors.white24, size: 16),
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
-                const SizedBox(height: 2),
-                Text(themeName, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                if (photo.title.isNotEmpty)
-                  Text(photo.title, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                if (subtitle.isNotEmpty)
-                  Text(subtitle, style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 12)),
-              ],
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(themeName, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                    if (subtitle.isNotEmpty)
+                      Text(subtitle, style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 11)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -456,34 +468,7 @@ class ActivityScreen extends ConsumerWidget {
   Widget _buildInfoCard(String label, String value, String subtitle) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
-                const SizedBox(height: 2),
-                Text(value, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-          if (subtitle.isNotEmpty)
-            Text(subtitle, style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 13)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyCard(String label, String message) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A2E),
         borderRadius: BorderRadius.circular(8),
@@ -493,7 +478,30 @@ class ActivityScreen extends ConsumerWidget {
         children: [
           Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
           const SizedBox(height: 4),
-          Text(message, style: const TextStyle(color: Colors.white24, fontSize: 13)),
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+          if (subtitle.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(subtitle, style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 11)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyCard(String label, String message) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+          const SizedBox(height: 4),
+          Text(message, style: const TextStyle(color: Colors.white24, fontSize: 12)),
         ],
       ),
     );
