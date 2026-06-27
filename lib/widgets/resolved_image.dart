@@ -31,6 +31,16 @@ class _ResolvedImageState extends State<ResolvedImage> {
     _resolvePath();
   }
 
+  @override
+  void didUpdateWidget(ResolvedImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // fileNameが変わったら再解決する
+    if (oldWidget.fileName != widget.fileName) {
+      _resolvedPath = null;
+      _resolvePath();
+    }
+  }
+
   Future<void> _resolvePath() async {
     final path = await ImageService.resolveImagePath(widget.fileName);
     if (mounted) setState(() => _resolvedPath = path);
@@ -53,6 +63,9 @@ class _ResolvedImageState extends State<ResolvedImage> {
       fit: widget.fit,
       width: widget.width,
       height: widget.height,
+      // キャッシュを使わず常に最新を表示
+      cacheWidth: null,
+      key: ValueKey(_resolvedPath),
     );
   }
 }
