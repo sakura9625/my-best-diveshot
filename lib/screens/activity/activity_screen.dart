@@ -1,0 +1,558 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../constants/themes.dart';
+import '../../models/tile_data.dart';
+import '../../models/best_photo.dart';
+import '../../providers/tiles_provider.dart';
+import '../../providers/bingo_provider.dart';
+import '../../widgets/resolved_image.dart';
+
+class ActivityScreen extends ConsumerWidget {
+  const ActivityScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tiles = ref.watch(tilesProvider);
+    final bingoLines = ref.watch(completedBingoLinesProvider);
+    final kingTiles = tiles.values.where((t) => t.isKing).toList();
+    final provisionalTiles = tiles.values.where((t) => t.isProvisional).toList();
+    final emptyCount = 25 - tiles.values.where((t) => t.hasPhoto).length;
+    final isComplete = kingTiles.length == 25;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A1A),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0A0A1A),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          'アクティビティ',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildSectionTitle('📊 ステータス'),
+          const SizedBox(height: 8),
+          _buildStatusGrid(kingTiles.length, provisionalTiles.length, emptyCount, tiles),
+          const SizedBox(height: 24),
+
+          _buildSectionTitle('🎯 ビンゴ'),
+          const SizedBox(height: 8),
+          _buildBingoSection(bingoLines, isComplete, tiles),
+          const SizedBox(height: 24),
+
+          _buildSectionTitle('👑 王者ストーリー'),
+          const SizedBox(height: 8),
+          ..._buildKingStories(tiles, kingTiles),
+          const SizedBox(height: 24),
+
+          _buildSectionTitle('⚔️ 激戦・記録'),
+          const SizedBox(height: 8),
+          ..._buildBattleStats(tiles),
+          const SizedBox(height: 24),
+
+          _buildSectionTitle('📅 撮影記録'),
+          const SizedBox(height: 8),
+          ..._buildShotStats(tiles),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: Colors.white70,
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  Widget _buildStatusGrid(int kingCount, int provisionalCount, int emptyCount, Map<String, TileData> tiles) {
+    final totalCrownCount = tiles.values
+        .map((t) => (t.currentBest?.crownCount ?? 0) + t.history.length)
+        .fold(0, (a, b) => a + b);
+
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      childAspectRatio: 2.5,
+      children: [
+        _buildStatCard('王者登録数', '$kingCount / 25', const Color(0xFF00B4D8)),
+        _buildStatCard('仮登録中', '$provisionalCount テーマ', Colors.white38),
+        _buildStatCard('未登録', '$emptyCount テーマ', Colors.white24),
+        _buildStatCard('王者認定総数', '$totalCrownCount 回', const Color(0xFFFFD700)),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, Color valueColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+          const SizedBox(height: 2),
+          Text(value, style: TextStyle(color: valueColor, fontSize: 16, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBingoSection(List<int> bingoLines, bool isComplete, Map<String, TileData> tiles) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 1,
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A2E),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: CustomPaint(
+                painter: _BingoGridPainter(
+                  bingoLines: bingoLines,
+                  tiles: tiles,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 1,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A2E),
+              borderRadius: BorderRadius.circular(8),
+              border: isComplete
+                  ? Border.all(color: const Color(0xFFFFD700), width: 1.5)
+                  : null,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  isComplete ? 'コンプリート' : '現在のビンゴ',
+                  style: TextStyle(
+                    color: isComplete ? const Color(0xFFFFD700) : Colors.white54,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                isComplete
+                    ? const Text('🏆', style: TextStyle(fontSize: 40))
+                    : Text(
+                        '${bingoLines.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildKingStories(Map<String, TileData> tiles, List<TileData> kingTiles) {
+    final widgets = <Widget>[];
+    final now = DateTime.now();
+
+    TileData? newestKing;
+    for (final t in kingTiles) {
+      if (t.currentBest?.crownedAt != null) {
+        if (newestKing == null ||
+            t.currentBest!.crownedAt!.isAfter(newestKing.currentBest!.crownedAt!)) {
+          newestKing = t;
+        }
+      }
+    }
+    if (newestKing != null) {
+      widgets.add(_buildKingStoryCard(
+        '最新の王者',
+        newestKing,
+        subtitle: _formatDate(newestKing.currentBest?.crownedAt),
+      ));
+    }
+
+    TileData? oldestKing;
+    for (final t in kingTiles) {
+      if (t.currentBest?.crownedAt != null) {
+        if (oldestKing == null ||
+            t.currentBest!.crownedAt!.isBefore(oldestKing.currentBest!.crownedAt!)) {
+          oldestKing = t;
+        }
+      }
+    }
+    if (oldestKing != null) {
+      final days = now.difference(oldestKing.currentBest!.crownedAt!).inDays;
+      widgets.add(_buildKingStoryCard(
+        '最古の王者',
+        oldestKing,
+        subtitle: '在位 $days 日',
+      ));
+    }
+
+    final ironKings = kingTiles.where((t) {
+      if (t.currentBest?.crownedAt == null) return false;
+      return now.difference(t.currentBest!.crownedAt!).inDays >= 365;
+    }).toList();
+    if (ironKings.isNotEmpty) {
+      ironKings.sort((a, b) => a.currentBest!.crownedAt!.compareTo(b.currentBest!.crownedAt!));
+      final days = now.difference(ironKings.first.currentBest!.crownedAt!).inDays;
+      widgets.add(_buildKingStoryCard(
+        '🛡️ 鉄壁の王者',
+        ironKings.first,
+        subtitle: '在位 $days 日（1年以上）',
+      ));
+    }
+
+    TileData? defenseKing;
+    int maxRestore = 0;
+    for (final t in tiles.values) {
+      final restoreCount = t.history.where((h) => h.isRestored).length +
+          (t.currentBest?.isRestored == true ? 1 : 0);
+      if (restoreCount >= 3 && restoreCount > maxRestore) {
+        maxRestore = restoreCount;
+        defenseKing = t;
+      }
+    }
+    if (defenseKing != null) {
+      widgets.add(_buildKingStoryCard(
+        '🔄 防衛王',
+        defenseKing,
+        subtitle: '$maxRestore 回復活',
+      ));
+    }
+
+    BestPhoto? longestReign;
+    String? longestThemeName;
+    for (final t in tiles.values) {
+      final allPhotos = [...t.history, if (t.currentBest != null) t.currentBest!];
+      for (final p in allPhotos) {
+        if (p.crownedAt != null) {
+          if (longestReign == null ||
+              p.crownedAt!.isBefore(longestReign.crownedAt!)) {
+            longestReign = p;
+            longestThemeName = kThemes.firstWhere((th) => th.id == t.themeId).name;
+          }
+        }
+      }
+    }
+    if (longestReign != null && longestThemeName != null) {
+      final days = now.difference(longestReign.crownedAt!).inDays;
+      widgets.add(_buildPhotoCard('最長の歴代王者', longestReign, longestThemeName!, '在位 $days 日'));
+    }
+
+    BestPhoto? shortestReign;
+    String? shortestThemeName;
+    for (final t in tiles.values) {
+      for (final p in t.history) {
+        if (p.crownedAt != null) {
+          if (shortestReign == null ||
+              p.crownedAt!.isAfter(shortestReign.crownedAt!)) {
+            shortestReign = p;
+            shortestThemeName = kThemes.firstWhere((th) => th.id == t.themeId).name;
+          }
+        }
+      }
+    }
+    if (shortestReign != null && shortestThemeName != null) {
+      final days = now.difference(shortestReign.crownedAt!).inDays;
+      widgets.add(_buildPhotoCard('最短の歴代王者', shortestReign, shortestThemeName!, '在位 $days 日'));
+    }
+
+    if (widgets.isEmpty) {
+      widgets.add(_buildEmptyCard('王者を認定するとストーリーが生まれます'));
+    }
+
+    return widgets;
+  }
+
+  List<Widget> _buildBattleStats(Map<String, TileData> tiles) {
+    final widgets = <Widget>[];
+    final now = DateTime.now();
+
+    final hotThemes = <String, int>{};
+    for (final t in tiles.values) {
+      int count = 0;
+      for (final h in t.history) {
+        if (h.crownedAt != null && now.difference(h.crownedAt!).inDays <= 90) {
+          count++;
+        }
+      }
+      if (t.currentBest?.crownedAt != null &&
+          now.difference(t.currentBest!.crownedAt!).inDays <= 90) {
+        count++;
+      }
+      if (count >= 5) hotThemes[t.themeId] = count;
+    }
+    if (hotThemes.isNotEmpty) {
+      final sorted = hotThemes.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      final themeName = kThemes.firstWhere((th) => th.id == sorted.first.key).name;
+      widgets.add(_buildInfoCard('🔥 激戦テーマ', themeName, '直近90日で ${sorted.first.value} 回交代'));
+    }
+
+    String? restoreTheme;
+    int maxRestore = 0;
+    for (final t in tiles.values) {
+      final count = t.history.where((h) => h.isRestored).length +
+          (t.currentBest?.isRestored == true ? 1 : 0);
+      if (count > maxRestore) {
+        maxRestore = count;
+        restoreTheme = t.themeId;
+      }
+    }
+    if (restoreTheme != null && maxRestore > 0) {
+      final themeName = kThemes.firstWhere((th) => th.id == restoreTheme).name;
+      widgets.add(_buildInfoCard('⚔️ 王者奪還', themeName, '$maxRestore 回復活'));
+    }
+
+    String? mostChanged;
+    int maxChanges = 0;
+    for (final t in tiles.values) {
+      final count = t.history.length;
+      if (count > maxChanges) {
+        maxChanges = count;
+        mostChanged = t.themeId;
+      }
+    }
+    if (mostChanged != null && maxChanges > 0) {
+      final themeName = kThemes.firstWhere((th) => th.id == mostChanged).name;
+      widgets.add(_buildInfoCard('🔄 交代が多いテーマ', themeName, '$maxChanges 回交代'));
+    }
+
+    final stableThemes = tiles.values.where((t) => t.isKing && t.history.isEmpty).toList();
+    if (stableThemes.isNotEmpty) {
+      final themeName = kThemes.firstWhere((th) => th.id == stableThemes.first.themeId).name;
+      widgets.add(_buildInfoCard('🏰 交代が少ないテーマ', themeName, '一度も交代なし'));
+    }
+
+    if (widgets.isEmpty) {
+      widgets.add(_buildEmptyCard('王者交代が増えると記録が生まれます'));
+    }
+
+    return widgets;
+  }
+
+  List<Widget> _buildShotStats(Map<String, TileData> tiles) {
+    final widgets = <Widget>[];
+    final allPhotos = <BestPhoto>[];
+
+    for (final t in tiles.values) {
+      if (t.currentBest != null) allPhotos.add(t.currentBest!);
+      allPhotos.addAll(t.history);
+    }
+
+    final photosWithDate = allPhotos.where((p) => p.shotDate != null).toList();
+
+    if (photosWithDate.isNotEmpty) {
+      photosWithDate.sort((a, b) => a.shotDate!.compareTo(b.shotDate!));
+      widgets.add(_buildInfoCard('📷 最古の撮影日', _formatDate(photosWithDate.first.shotDate), ''));
+    }
+
+    if (photosWithDate.isNotEmpty) {
+      widgets.add(_buildInfoCard('📷 最新の撮影日', _formatDate(photosWithDate.last.shotDate), ''));
+    }
+
+    final locations = allPhotos
+        .map((p) => p.location)
+        .where((l) => l.isNotEmpty)
+        .toSet();
+    widgets.add(_buildInfoCard('📍 撮影場所', '${locations.length} カ所', ''));
+
+    if (locations.isNotEmpty) {
+      final locationCount = <String, int>{};
+      for (final p in allPhotos) {
+        if (p.location.isNotEmpty) {
+          locationCount[p.location] = (locationCount[p.location] ?? 0) + 1;
+        }
+      }
+      final sorted = locationCount.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      widgets.add(_buildInfoCard('🌊 最多撮影地', sorted.first.key, '${sorted.first.value} 枚'));
+    }
+
+    if (widgets.isEmpty) {
+      widgets.add(_buildEmptyCard('撮影場所を登録すると記録が生まれます'));
+    }
+
+    return widgets;
+  }
+
+  Widget _buildKingStoryCard(String label, TileData tile, {String? subtitle}) {
+    final photo = tile.currentBest;
+    final themeName = kThemes.firstWhere((th) => th.id == tile.themeId).name;
+    return _buildPhotoCard(label, photo!, themeName, subtitle ?? '');
+  }
+
+  Widget _buildPhotoCard(String label, BestPhoto photo, String themeName, String subtitle) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: ResolvedImage(
+              fileName: photo.fileName,
+              width: 56,
+              height: 56,
+              fit: BoxFit.cover,
+              errorWidget: Container(
+                width: 56,
+                height: 56,
+                color: Colors.white12,
+                child: const Icon(Icons.image_not_supported, color: Colors.white24),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                const SizedBox(height: 2),
+                Text(themeName, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                if (photo.title.isNotEmpty)
+                  Text(photo.title, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                if (subtitle.isNotEmpty)
+                  Text(subtitle, style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(String label, String value, String subtitle) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                const SizedBox(height: 2),
+                Text(value, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          if (subtitle.isNotEmpty)
+            Text(subtitle, style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyCard(String message) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(message, style: const TextStyle(color: Colors.white24, fontSize: 13)),
+    );
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return '不明';
+    return DateFormat('yyyy年M月d日').format(date);
+  }
+}
+
+class _BingoGridPainter extends CustomPainter {
+  final List<int> bingoLines;
+  final Map<String, TileData> tiles;
+
+  _BingoGridPainter({required this.bingoLines, required this.tiles});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cellW = size.width / 5;
+    final cellH = size.height / 5;
+
+    final gridPaint = Paint()
+      ..color = Colors.white12
+      ..strokeWidth = 0.5
+      ..style = PaintingStyle.stroke;
+
+    for (int i = 0; i <= 5; i++) {
+      canvas.drawLine(Offset(i * cellW, 0), Offset(i * cellW, size.height), gridPaint);
+      canvas.drawLine(Offset(0, i * cellH), Offset(size.width, i * cellH), gridPaint);
+    }
+
+    final kingPaint = Paint()
+      ..color = const Color(0xFF00B4D8).withOpacity(0.2)
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < kThemes.length; i++) {
+      final tile = tiles[kThemes[i].id];
+      if (tile?.isKing == true) {
+        final col = i % 5;
+        final row = i ~/ 5;
+        canvas.drawRect(
+          Rect.fromLTWH(col * cellW + 1, row * cellH + 1, cellW - 2, cellH - 2),
+          kingPaint,
+        );
+      }
+    }
+
+    final linePaint = Paint()
+      ..color = const Color(0xFF00B4D8).withOpacity(0.7)
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    Offset cellCenter(int index) {
+      final col = index % 5;
+      final row = index ~/ 5;
+      return Offset(col * cellW + cellW / 2, row * cellH + cellH / 2);
+    }
+
+    for (final lineIndex in bingoLines) {
+      final line = kBingoLines[lineIndex];
+      canvas.drawLine(cellCenter(line.first), cellCenter(line.last), linePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_BingoGridPainter oldDelegate) =>
+      oldDelegate.bingoLines != bingoLines || oldDelegate.tiles != tiles;
+}
