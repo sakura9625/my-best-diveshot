@@ -100,7 +100,7 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
       registeredAt: DateTime.now(),
     );
 
-    final newHistory = [
+    final newHistory = <BestPhoto>[
       ...existing?.history ?? [],
       if (existing?.isKing == true) existing!.currentBest!,
     ];
