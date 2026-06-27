@@ -1,10 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../constants/themes.dart';
+import '../../models/tile_data.dart';
+import '../../providers/tiles_provider.dart';
+import '../../providers/ranking_provider.dart';
+import '../../widgets/resolved_image.dart';
 
-class RankingScreen extends StatelessWidget {
+class RankingScreen extends ConsumerWidget {
   const RankingScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ranking = ref.watch(rankingProvider);
+    final tiles = ref.watch(tilesProvider);
+
+    final rankedIds = ranking.where((id) {
+      final tile = tiles[id];
+      return tile?.isKing == true;
+    }).toList();
+
+    final provisionalIds = ranking.where((id) {
+      final tile = tiles[id];
+      return tile?.isProvisional == true;
+    }).toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A1A),
       appBar: AppBar(
@@ -13,12 +32,313 @@ class RankingScreen extends StatelessWidget {
           'ランキング',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.photo_library_outlined, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RankingGalleryScreen(
+                    rankedIds: rankedIds,
+                    tiles: tiles,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
-      body: const Center(
-        child: Text(
-          '準備中',
-          style: TextStyle(color: Colors.white38, fontSize: 16),
+      body: rankedIds.isEmpty && provisionalIds.isEmpty
+          ? const Center(
+              child: Text(
+                '写真を登録するとランキングが表示されます',
+                style: TextStyle(color: Colors.white38, fontSize: 14),
+              ),
+            )
+          : ReorderableListView.builder(
+              padding: const EdgeInsets.all(12),
+              onReorder: (oldIndex, newIndex) {
+                if (oldIndex < rankedIds.length && newIndex <= rankedIds.length) {
+                  final allRanking = ref.read(rankingProvider);
+                  final kingOldIndex = allRanking.indexOf(rankedIds[oldIndex]);
+                  int kingNewIndex;
+                  if (newIndex >= rankedIds.length) {
+                    kingNewIndex = allRanking.indexOf(rankedIds[rankedIds.length - 1]) + 1;
+                  } else {
+                    kingNewIndex = allRanking.indexOf(rankedIds[newIndex]);
+                  }
+                  ref.read(rankingProvider.notifier).reorder(kingOldIndex, kingNewIndex);
+                }
+              },
+              itemCount: rankedIds.length + (provisionalIds.isNotEmpty ? provisionalIds.length + 1 : 0),
+              itemBuilder: (context, index) {
+                if (provisionalIds.isNotEmpty && index == rankedIds.length) {
+                  return const _SectionDivider(key: ValueKey('divider'), label: '仮登録中');
+                }
+
+                final isProvisional = index > rankedIds.length;
+                final id = isProvisional
+                    ? provisionalIds[index - rankedIds.length - 1]
+                    : rankedIds[index];
+                final tile = tiles[id];
+                final theme = kThemes.firstWhere((t) => t.id == id);
+                final rank = isProvisional ? null : index + 1;
+
+                return _RankingCard(
+                  key: ValueKey(id),
+                  rank: rank,
+                  theme: theme,
+                  tile: tile,
+                  isDraggable: !isProvisional,
+                  onTap: () {
+                    if (tile?.currentBest != null) {
+                      showDialog(
+                        context: context,
+                        builder: (_) => _PhotoPreviewDialog(
+                          theme: theme,
+                          tile: tile!,
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+    );
+  }
+}
+
+class _SectionDivider extends StatelessWidget {
+  final String label;
+  const _SectionDivider({super.key, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          const Expanded(child: Divider(color: Colors.white12)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(label, style: const TextStyle(color: Colors.white24, fontSize: 12)),
+          ),
+          const Expanded(child: Divider(color: Colors.white12)),
+        ],
+      ),
+    );
+  }
+}
+
+class _RankingCard extends StatelessWidget {
+  final int? rank;
+  final ThemeDefinition theme;
+  final TileData? tile;
+  final bool isDraggable;
+  final VoidCallback onTap;
+
+  const _RankingCard({
+    super.key,
+    required this.rank,
+    required this.theme,
+    required this.tile,
+    required this.isDraggable,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final photo = tile?.currentBest;
+    final isKing = tile?.isKing == true;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A2E),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isKing ? const Color(0xFF00B4D8).withOpacity(0.3) : Colors.white12,
+          ),
         ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 36,
+              child: rank != null
+                  ? Text(
+                      '$rank',
+                      style: TextStyle(
+                        color: rank! <= 3 ? const Color(0xFFFFD700) : Colors.white54,
+                        fontSize: rank! <= 3 ? 20 : 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    )
+                  : const Icon(Icons.hourglass_empty, color: Colors.white24, size: 18),
+            ),
+            const SizedBox(width: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: photo != null
+                  ? ResolvedImage(
+                      fileName: photo.fileName,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                    )
+                  : Container(
+                      width: 56,
+                      height: 56,
+                      color: Colors.white12,
+                      child: const Icon(Icons.image, color: Colors.white24),
+                    ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    theme.name,
+                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                  if (photo?.title.isNotEmpty == true)
+                    Text(
+                      photo!.title,
+                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    ),
+                  if (photo?.location.isNotEmpty == true)
+                    Text(
+                      photo!.location,
+                      style: const TextStyle(color: Colors.white38, fontSize: 11),
+                    ),
+                ],
+              ),
+            ),
+            if (isDraggable)
+              const Icon(Icons.drag_handle, color: Colors.white24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PhotoPreviewDialog extends StatelessWidget {
+  final ThemeDefinition theme;
+  final TileData tile;
+
+  const _PhotoPreviewDialog({required this.theme, required this.tile});
+
+  @override
+  Widget build(BuildContext context) {
+    final photo = tile.currentBest!;
+    return Dialog(
+      backgroundColor: const Color(0xFF0A0A1A),
+      insetPadding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            child: ResolvedImage(
+              fileName: photo.fileName,
+              fit: BoxFit.cover,
+              width: double.infinity,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(theme.name, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                if (photo.title.isNotEmpty)
+                  Text(photo.title, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                if (photo.location.isNotEmpty)
+                  Text(photo.location, style: const TextStyle(color: Colors.white54, fontSize: 13)),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('閉じる', style: TextStyle(color: Color(0xFF00B4D8))),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class RankingGalleryScreen extends StatelessWidget {
+  final List<String> rankedIds;
+  final Map<String, TileData> tiles;
+
+  const RankingGalleryScreen({
+    super.key,
+    required this.rankedIds,
+    required this.tiles,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A1A),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0A0A1A),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('ランキング一覧', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: rankedIds.length,
+        itemBuilder: (context, index) {
+          final id = rankedIds[index];
+          final tile = tiles[id];
+          final theme = kThemes.firstWhere((t) => t.id == id);
+          final photo = tile?.currentBest;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '${index + 1}位',
+                      style: TextStyle(
+                        color: index < 3 ? const Color(0xFFFFD700) : Colors.white54,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(theme.name, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                if (photo != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: ResolvedImage(
+                      fileName: photo.fileName,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                    ),
+                  ),
+                if (photo?.title.isNotEmpty == true)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(photo!.title, style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                  ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
