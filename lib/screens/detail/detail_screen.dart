@@ -266,7 +266,13 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: OutlinedButton.icon(
-                  onPressed: () => ref.read(tilesProvider.notifier).updateKing(theme.id),
+                  onPressed: () {
+                    if (tile?.isKing == true) {
+                      ref.read(tilesProvider.notifier).updateKing(theme.id);
+                    } else {
+                      ref.read(tilesProvider.notifier).pickAndRegisterPhoto(theme.id);
+                    }
+                  },
                   icon: const Icon(Icons.swap_horiz, color: Color(0xFF00B4D8), size: 18),
                   label: const Text('王者を更新する', style: TextStyle(color: Color(0xFF00B4D8))),
                   style: OutlinedButton.styleFrom(
@@ -297,22 +303,6 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                     ),
                   ),
                 ),
-              if (hasPhoto && tile?.isProvisional == true)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      ref.read(tilesProvider.notifier).crownAsKing(theme.id);
-                    },
-                    icon: const Text('👑', style: TextStyle(fontSize: 16)),
-                    label: const Text('王者に認定する'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00B4D8),
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 44),
-                    ),
-                  ),
-                ),
               const SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -339,9 +329,6 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                     const SizedBox(height: 20),
                     _buildMonthField(context, photo, hasPhoto),
                     const SizedBox(height: 20),
-                    if (hasPhoto && photo != null)
-                      _buildKingHistoryCard(photo, tile),
-                    const SizedBox(height: 20),
                     _buildUnderlineField(
                       label: '思い出コメント',
                       value: photo?.comment ?? '',
@@ -351,7 +338,10 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                       hint: '例：透明度30m、一生忘れられない一枚',
                       maxLines: 3,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 28),
+                    if (hasPhoto && photo != null)
+                      _buildKingHistoryCard(photo, tile),
+                    const SizedBox(height: 28),
                     const Text(
                       '歴代王者',
                       style: TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.bold),
@@ -379,6 +369,26 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                           minimumSize: const Size(double.infinity, 36),
                         ),
                         child: const Text('歴代王者を比較する', style: TextStyle(color: Colors.white54, fontSize: 13)),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    if (hasPhoto && tile?.isProvisional == true) ...[
+                      const Text(
+                        '合格点なら王者認定しましょう',
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          await ref.read(tilesProvider.notifier).crownAsKing(theme.id);
+                        },
+                        icon: const Text('👑', style: TextStyle(fontSize: 16)),
+                        label: const Text('王者に認定する'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFD700),
+                          foregroundColor: Colors.black,
+                          minimumSize: const Size(double.infinity, 48),
+                        ),
                       ),
                     ],
                     const SizedBox(height: 32),
