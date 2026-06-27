@@ -4,6 +4,7 @@ import '../../constants/themes.dart';
 import '../../models/tile_data.dart';
 import '../../providers/tiles_provider.dart';
 import '../../providers/ranking_provider.dart';
+import '../../providers/sheet_provider.dart';
 import '../../widgets/resolved_image.dart';
 
 class RankingScreen extends ConsumerWidget {
@@ -11,8 +12,9 @@ class RankingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final sheetId = ref.watch(currentSheetProvider);
     final ranking = ref.watch(rankingProvider);
-    final tiles = ref.watch(tilesProvider);
+    final tiles = ref.watch(tilesProvider(sheetId));
 
     final rankedIds = ranking.where((id) {
       final tile = tiles[id];

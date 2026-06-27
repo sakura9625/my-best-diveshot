@@ -6,6 +6,7 @@ import '../../models/tile_data.dart';
 import '../../models/best_photo.dart';
 import '../../providers/tiles_provider.dart';
 import '../../providers/bingo_provider.dart';
+import '../../providers/sheet_provider.dart';
 import '../../widgets/resolved_image.dart';
 
 class ActivityScreen extends ConsumerWidget {
@@ -13,8 +14,9 @@ class ActivityScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tiles = ref.watch(tilesProvider);
-    final bingoLines = ref.watch(completedBingoLinesProvider);
+    final sheetId = ref.watch(currentSheetProvider);
+    final tiles = ref.watch(tilesProvider(sheetId));
+    final bingoLines = ref.watch(completedBingoLinesProvider(sheetId));
     final kingTiles = tiles.values.where((t) => t.isKing).toList();
     final provisionalTiles = tiles.values.where((t) => t.isProvisional).toList();
     final emptyCount = 25 - tiles.values.where((t) => t.hasPhoto).length;

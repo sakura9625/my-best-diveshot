@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/themes.dart';
+import '../../constants/advance_themes.dart';
 import '../../providers/tiles_provider.dart';
 import '../../providers/bingo_provider.dart';
+import '../../providers/sheet_provider.dart';
 import '../../widgets/bingo_overlay.dart';
 import '../../widgets/resolved_image.dart';
 import '../detail/detail_screen.dart';
-
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -20,9 +21,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   List<int> _newBingoLines = [];
   bool _showBingo = false;
 
-  void _checkNewBingo() {
-    final currentLines = ref.read(completedBingoLinesProvider);
-    final notifier = ref.read(tilesProvider.notifier);
+  void _checkNewBingo(String sheetId) {
+    final currentLines = ref.read(completedBingoLinesProvider(sheetId));
+    final notifier = ref.read(tilesProvider(sheetId).notifier);
     final newLines = notifier.getNewlyCompletedLines(currentLines);
     if (newLines.isNotEmpty) {
       setState(() {
@@ -32,11 +33,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  List<ThemeDefinition> _getThemes(String sheetId) {
+    switch (sheetId) {
+      case 'advance':
+        return kAdvanceThemes;
+      case 'my_select':
+        return kThemes;
+      default:
+        return kThemes;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final tiles = ref.watch(tilesProvider);
-    final completedCount = ref.watch(completedCountProvider);
-    final completedLines = ref.watch(completedBingoLinesProvider);
+    final currentSheetId = ref.watch(currentSheetProvider);
+    final tiles = ref.watch(tilesProvider(currentSheetId));
+    final completedCount = ref.watch(completedCountProvider(currentSheetId));
+    final completedLines = ref.watch(completedBingoLinesProvider(currentSheetId));
+    final themes = _getThemes(currentSheetId);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A1A),
@@ -62,15 +76,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       '$completedCount / 25 完成',
-                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                      style: const TextStyle(color: Colors.white70, fontSize: 13),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     LinearProgressIndicator(
                       value: completedCount / 25,
                       backgroundColor: Colors.white12,
@@ -83,15 +97,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Stack(
                   children: [
                     GridView.builder(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 5,
                         crossAxisSpacing: 4,
                         mainAxisSpacing: 4,
                       ),
-                      itemCount: kThemes.length,
+                      itemCount: themes.length,
                       itemBuilder: (context, index) {
-                        final theme = kThemes[index];
+                        final theme = themes[index];
                         final tile = tiles[theme.id];
                         final hasPhoto = tile?.hasPhoto ?? false;
                         final fileName = tile?.currentBest?.fileName;
@@ -104,10 +118,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 builder: (_) => DetailScreen(
                                   theme: theme,
                                   initialIndex: index,
+                                  sheetId: currentSheetId,
+                                  themes: themes,
                                 ),
                               ),
                             );
-                            _checkNewBingo();
+                            _checkNewBingo(currentSheetId);
                           },
                           child: Container(
                             decoration: BoxDecoration(
@@ -196,6 +212,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ],
                 ),
               ),
+              _buildSheetSelector(context, ref),
             ],
           ),
           if (_showBingo)
@@ -207,6 +224,114 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               }),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSheetSelector(BuildContext context, WidgetRef ref) {
+    final currentSheetId = ref.watch(currentSheetProvider);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _buildSheetCard(ref, 'open_water', 'Open Water', currentSheetId),
+              const SizedBox(width: 8),
+              _buildSheetCard(ref, 'advance', 'Advanced', currentSheetId),
+              const SizedBox(width: 8),
+              _buildSheetCard(ref, 'my_select', 'My Select', currentSheetId),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _buildLockedSlot(),
+              const SizedBox(width: 8),
+              _buildLockedSlot(),
+              const SizedBox(width: 8),
+              _buildLockedSlot(),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSheetCard(WidgetRef ref, String sheetId, String name, String currentSheetId) {
+    final isSelected = sheetId == currentSheetId;
+    final completedCount = ref.watch(completedCountProvider(sheetId));
+    final isUnlocked = sheetId == 'open_water' || sheetId == 'my_select';
+    final isAdvance = sheetId == 'advance';
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          if (isUnlocked || isAdvance) {
+            ref.read(currentSheetProvider.notifier).state = sheetId;
+          }
+        },
+        child: Container(
+          height: 72,
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF00B4D8).withOpacity(0.15) : const Color(0xFF1A1A2E),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF00B4D8) : Colors.white12,
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isAdvance) ...[
+                const Icon(Icons.lock_outline, color: Colors.white38, size: 16),
+                const SizedBox(height: 2),
+                const Text('未解放', style: TextStyle(color: Colors.white38, fontSize: 10)),
+                const SizedBox(height: 2),
+                Text(name, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+              ] else ...[
+                Text(
+                  '$completedCount/25',
+                  style: TextStyle(
+                    color: isSelected ? const Color(0xFF00B4D8) : Colors.white70,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  name,
+                  style: TextStyle(
+                    color: isSelected ? const Color(0xFF00B4D8) : Colors.white54,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLockedSlot() {
+    return Expanded(
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A2E).withOpacity(0.5),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white12),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('+', style: TextStyle(color: Colors.white24, fontSize: 18)),
+            Text('?', style: TextStyle(color: Colors.white24, fontSize: 11)),
+          ],
+        ),
       ),
     );
   }

@@ -11,11 +11,15 @@ import '../../widgets/resolved_image.dart';
 class DetailScreen extends ConsumerStatefulWidget {
   final ThemeDefinition theme;
   final int initialIndex;
+  final String sheetId;
+  final List<ThemeDefinition> themes;
 
   const DetailScreen({
     super.key,
     required this.theme,
     required this.initialIndex,
+    required this.sheetId,
+    required this.themes,
   });
 
   @override
@@ -50,7 +54,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
     super.dispose();
   }
 
-  ThemeDefinition get _currentTheme => kThemes[_currentIndex];
+  ThemeDefinition get _currentTheme => widget.themes[_currentIndex];
 
   void _initControllers(BestPhoto photo) {
     _titleController.text = photo.title;
@@ -60,7 +64,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
   }
 
   Future<void> _showImageSourcePicker(String themeId) async {
-    await ref.read(tilesProvider.notifier).pickAndRegisterPhoto(themeId);
+    await ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(themeId);
   }
 
   Future<void> _pickMonth(BuildContext context) async {
@@ -158,7 +162,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
       comment: _commentController.text,
       registeredAt: current.registeredAt,
     );
-    await ref.read(tilesProvider.notifier).updatePhotoMeta(_currentTheme.id, updated);
+    await ref.read(tilesProvider(widget.sheetId).notifier).updatePhotoMeta(_currentTheme.id, updated);
     setState(() => _isEditing = false);
   }
 
@@ -194,7 +198,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
       backgroundColor: const Color(0xFF0A0A1A),
       body: PageView.builder(
         controller: _pageController,
-        itemCount: kThemes.length,
+        itemCount: widget.themes.length,
         onPageChanged: (index) {
           setState(() {
             _currentIndex = index;
@@ -202,8 +206,8 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
           });
         },
         itemBuilder: (context, index) {
-          final theme = kThemes[index];
-          final tiles = ref.watch(tilesProvider);
+          final theme = widget.themes[index];
+          final tiles = ref.watch(tilesProvider(widget.sheetId));
           final tile = tiles[theme.id];
           final hasPhoto = tile?.hasPhoto ?? false;
           final photo = tile?.currentBest;
@@ -248,7 +252,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                       const SizedBox(height: 6),
                       ElevatedButton.icon(
                         onPressed: () async {
-                          await ref.read(tilesProvider.notifier).crownAsKing(theme.id);
+                          await ref.read(tilesProvider(widget.sheetId).notifier).crownAsKing(theme.id);
                         },
                         icon: const Text('👑', style: TextStyle(fontSize: 16)),
                         label: const Text('王者に認定する'),
@@ -265,9 +269,9 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
               GestureDetector(
                 onTap: () {
                   if (tile?.isKing == true) {
-                    ref.read(tilesProvider.notifier).updateKing(theme.id);
+                    ref.read(tilesProvider(widget.sheetId).notifier).updateKing(theme.id);
                   } else {
-                    ref.read(tilesProvider.notifier).pickAndRegisterPhoto(theme.id);
+                    ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(theme.id);
                   }
                 },
                 child: hasPhoto && photo != null
@@ -295,9 +299,9 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () {
                     if (tile?.isKing == true) {
-                      ref.read(tilesProvider.notifier).updateKing(theme.id);
+                      ref.read(tilesProvider(widget.sheetId).notifier).updateKing(theme.id);
                     } else {
-                      ref.read(tilesProvider.notifier).pickAndRegisterPhoto(theme.id);
+                      ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(theme.id);
                     }
                   },
                   icon: const Icon(Icons.swap_horiz, color: Color(0xFF00B4D8), size: 18),
@@ -471,7 +475,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                                 return;
                               }
                               final historyIndex = tile.history.length - index;
-                              ref.read(tilesProvider.notifier).restoreFromHistory(_currentTheme.id, historyIndex);
+                              ref.read(tilesProvider(widget.sheetId).notifier).restoreFromHistory(_currentTheme.id, historyIndex);
                               Navigator.pop(context);
                             },
                             style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFF00B4D8))),
@@ -719,7 +723,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                 _showProFeatureDialog();
                 return;
               }
-              ref.read(tilesProvider.notifier).restoreFromHistory(themeId, index);
+              ref.read(tilesProvider(widget.sheetId).notifier).restoreFromHistory(themeId, index);
             },
             child: const Text('復活', style: TextStyle(color: Color(0xFF00B4D8), fontSize: 12)),
           ),

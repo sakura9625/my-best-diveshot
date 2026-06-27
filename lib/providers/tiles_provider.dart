@@ -5,12 +5,13 @@ import '../models/best_photo.dart';
 import '../services/image_service.dart';
 import '../services/firestore_service.dart';
 
-final tilesProvider = StateNotifierProvider<TilesNotifier, Map<String, TileData>>((ref) {
-  return TilesNotifier();
+final tilesProvider = StateNotifierProvider.family<TilesNotifier, Map<String, TileData>, String>((ref, sheetId) {
+  return TilesNotifier(sheetId);
 });
 
 class TilesNotifier extends StateNotifier<Map<String, TileData>> {
-  TilesNotifier() : super({}) {
+  final String sheetId;
+  TilesNotifier(this.sheetId) : super({}) {
     _loadFromFirestore();
   }
 
@@ -18,7 +19,7 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
 
   Future<void> _loadFromFirestore() async {
     try {
-      final tiles = await FirestoreService.fetchAllTiles();
+      final tiles = await FirestoreService.fetchAllTiles(sheetId);
       state = tiles;
     } catch (e) {
       debugPrint('Firestore load error: $e');
@@ -50,7 +51,7 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     );
 
     state = {...state, themeId: newTile};
-    FirestoreService.saveTile(themeId, newTile).catchError((e) {
+    FirestoreService.saveTile(sheetId, themeId, newTile).catchError((e) {
       debugPrint('Firestore save error: $e');
     });
   }
@@ -78,7 +79,7 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     );
 
     state = {...state, themeId: newTile};
-    FirestoreService.saveTile(themeId, newTile).catchError((e) {
+    FirestoreService.saveTile(sheetId, themeId, newTile).catchError((e) {
       debugPrint('Firestore save error: $e');
     });
   }
@@ -113,7 +114,7 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     );
 
     state = {...state, themeId: newTile};
-    FirestoreService.saveTile(themeId, newTile).catchError((e) {
+    FirestoreService.saveTile(sheetId, themeId, newTile).catchError((e) {
       debugPrint('Firestore save error: $e');
     });
   }
@@ -123,7 +124,7 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     if (existing == null) return;
     final newTile = existing.copyWith(currentBest: updated);
     state = {...state, themeId: newTile};
-    FirestoreService.saveTile(themeId, newTile).catchError((e) {
+    FirestoreService.saveTile(sheetId, themeId, newTile).catchError((e) {
       debugPrint('Firestore save error: $e');
     });
   }
@@ -155,7 +156,7 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     );
 
     state = {...state, themeId: newTile};
-    FirestoreService.saveTile(themeId, newTile).catchError((e) {
+    FirestoreService.saveTile(sheetId, themeId, newTile).catchError((e) {
       debugPrint('Firestore save error: $e');
     });
   }
@@ -169,7 +170,7 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
   }
 }
 
-final completedCountProvider = Provider<int>((ref) {
-  final tiles = ref.watch(tilesProvider);
+final completedCountProvider = Provider.family<int, String>((ref, sheetId) {
+  final tiles = ref.watch(tilesProvider(sheetId));
   return tiles.values.where((t) => t.isKing).length;
 });

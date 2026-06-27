@@ -5,13 +5,18 @@ import 'device_service.dart';
 class FirestoreService {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  static Future<CollectionReference<Map<String, dynamic>>> _tilesRef() async {
+  static Future<CollectionReference<Map<String, dynamic>>> _tilesRef(String sheetId) async {
     final deviceId = await DeviceService.getDeviceId();
-    return _db.collection('users').doc(deviceId).collection('tiles');
+    return _db
+        .collection('users')
+        .doc(deviceId)
+        .collection('sheets')
+        .doc(sheetId)
+        .collection('tiles');
   }
 
-  static Future<Map<String, TileData>> fetchAllTiles() async {
-    final ref = await _tilesRef();
+  static Future<Map<String, TileData>> fetchAllTiles(String sheetId) async {
+    final ref = await _tilesRef(sheetId);
     final snapshot = await ref.get();
     final result = <String, TileData>{};
     for (final doc in snapshot.docs) {
@@ -20,8 +25,8 @@ class FirestoreService {
     return result;
   }
 
-  static Future<void> saveTile(String themeId, TileData tile) async {
-    final ref = await _tilesRef();
+  static Future<void> saveTile(String sheetId, String themeId, TileData tile) async {
+    final ref = await _tilesRef(sheetId);
     await ref.doc(themeId).set({
       ...tile.toMap(),
       'updatedAt': FieldValue.serverTimestamp(),
