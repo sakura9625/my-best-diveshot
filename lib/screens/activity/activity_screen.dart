@@ -189,13 +189,9 @@ class ActivityScreen extends ConsumerWidget {
         }
       }
     }
-    if (newestKing != null) {
-      widgets.add(_buildKingStoryCard(
-        '最新の王者',
-        newestKing,
-        subtitle: _formatDate(newestKing.currentBest?.crownedAt),
-      ));
-    }
+    widgets.add(newestKing != null
+        ? _buildKingStoryCard('最新の王者', newestKing, subtitle: _formatDate(newestKing.currentBest?.crownedAt))
+        : _buildEmptyCard('最新の王者', 'まだ王者がいません'));
 
     TileData? oldestKing;
     for (final t in kingTiles) {
@@ -206,14 +202,9 @@ class ActivityScreen extends ConsumerWidget {
         }
       }
     }
-    if (oldestKing != null) {
-      final days = now.difference(oldestKing.currentBest!.crownedAt!).inDays;
-      widgets.add(_buildKingStoryCard(
-        '最古の王者',
-        oldestKing,
-        subtitle: '在位 $days 日',
-      ));
-    }
+    widgets.add(oldestKing != null
+        ? _buildKingStoryCard('最古の王者', oldestKing, subtitle: '在位 ${now.difference(oldestKing.currentBest!.crownedAt!).inDays} 日')
+        : _buildEmptyCard('最古の王者', 'まだ王者がいません'));
 
     final ironKings = kingTiles.where((t) {
       if (t.currentBest?.crownedAt == null) return false;
@@ -222,11 +213,9 @@ class ActivityScreen extends ConsumerWidget {
     if (ironKings.isNotEmpty) {
       ironKings.sort((a, b) => a.currentBest!.crownedAt!.compareTo(b.currentBest!.crownedAt!));
       final days = now.difference(ironKings.first.currentBest!.crownedAt!).inDays;
-      widgets.add(_buildKingStoryCard(
-        '🛡️ 鉄壁の王者',
-        ironKings.first,
-        subtitle: '在位 $days 日（1年以上）',
-      ));
+      widgets.add(_buildKingStoryCard('🛡️ 鉄壁の王者', ironKings.first, subtitle: '在位 $days 日（1年以上）'));
+    } else {
+      widgets.add(_buildEmptyCard('🛡️ 鉄壁の王者', '1年以上在位した王者はまだいません'));
     }
 
     TileData? defenseKing;
@@ -239,13 +228,9 @@ class ActivityScreen extends ConsumerWidget {
         defenseKing = t;
       }
     }
-    if (defenseKing != null) {
-      widgets.add(_buildKingStoryCard(
-        '🔄 防衛王',
-        defenseKing,
-        subtitle: '$maxRestore 回復活',
-      ));
-    }
+    widgets.add(defenseKing != null
+        ? _buildKingStoryCard('🔄 防衛王', defenseKing, subtitle: '$maxRestore 回復活')
+        : _buildEmptyCard('🔄 防衛王', '3回以上復活した王者はまだいません'));
 
     BestPhoto? longestReign;
     String? longestThemeName;
@@ -253,8 +238,7 @@ class ActivityScreen extends ConsumerWidget {
       final allPhotos = [...t.history, if (t.currentBest != null) t.currentBest!];
       for (final p in allPhotos) {
         if (p.crownedAt != null) {
-          if (longestReign == null ||
-              p.crownedAt!.isBefore(longestReign.crownedAt!)) {
+          if (longestReign == null || p.crownedAt!.isBefore(longestReign.crownedAt!)) {
             longestReign = p;
             longestThemeName = kThemes.firstWhere((th) => th.id == t.themeId).name;
           }
@@ -264,6 +248,8 @@ class ActivityScreen extends ConsumerWidget {
     if (longestReign != null && longestThemeName != null) {
       final days = now.difference(longestReign.crownedAt!).inDays;
       widgets.add(_buildPhotoCard('最長の歴代王者', longestReign, longestThemeName!, '在位 $days 日'));
+    } else {
+      widgets.add(_buildEmptyCard('最長の歴代王者', 'まだ記録がありません'));
     }
 
     BestPhoto? shortestReign;
@@ -271,8 +257,7 @@ class ActivityScreen extends ConsumerWidget {
     for (final t in tiles.values) {
       for (final p in t.history) {
         if (p.crownedAt != null) {
-          if (shortestReign == null ||
-              p.crownedAt!.isAfter(shortestReign.crownedAt!)) {
+          if (shortestReign == null || p.crownedAt!.isAfter(shortestReign.crownedAt!)) {
             shortestReign = p;
             shortestThemeName = kThemes.firstWhere((th) => th.id == t.themeId).name;
           }
@@ -282,10 +267,8 @@ class ActivityScreen extends ConsumerWidget {
     if (shortestReign != null && shortestThemeName != null) {
       final days = now.difference(shortestReign.crownedAt!).inDays;
       widgets.add(_buildPhotoCard('最短の歴代王者', shortestReign, shortestThemeName!, '在位 $days 日'));
-    }
-
-    if (widgets.isEmpty) {
-      widgets.add(_buildEmptyCard('王者を認定するとストーリーが生まれます'));
+    } else {
+      widgets.add(_buildEmptyCard('最短の歴代王者', 'まだ歴代王者がいません'));
     }
 
     return widgets;
@@ -299,20 +282,18 @@ class ActivityScreen extends ConsumerWidget {
     for (final t in tiles.values) {
       int count = 0;
       for (final h in t.history) {
-        if (h.crownedAt != null && now.difference(h.crownedAt!).inDays <= 90) {
-          count++;
-        }
+        if (h.crownedAt != null && now.difference(h.crownedAt!).inDays <= 90) count++;
       }
       if (t.currentBest?.crownedAt != null &&
-          now.difference(t.currentBest!.crownedAt!).inDays <= 90) {
-        count++;
-      }
+          now.difference(t.currentBest!.crownedAt!).inDays <= 90) count++;
       if (count >= 5) hotThemes[t.themeId] = count;
     }
     if (hotThemes.isNotEmpty) {
       final sorted = hotThemes.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
       final themeName = kThemes.firstWhere((th) => th.id == sorted.first.key).name;
       widgets.add(_buildInfoCard('🔥 激戦テーマ', themeName, '直近90日で ${sorted.first.value} 回交代'));
+    } else {
+      widgets.add(_buildEmptyCard('🔥 激戦テーマ', '直近90日で5回以上交代したテーマはありません'));
     }
 
     String? restoreTheme;
@@ -328,30 +309,31 @@ class ActivityScreen extends ConsumerWidget {
     if (restoreTheme != null && maxRestore > 0) {
       final themeName = kThemes.firstWhere((th) => th.id == restoreTheme).name;
       widgets.add(_buildInfoCard('⚔️ 王者奪還', themeName, '$maxRestore 回復活'));
+    } else {
+      widgets.add(_buildEmptyCard('⚔️ 王者奪還', 'まだ復活した王者はいません'));
     }
 
     String? mostChanged;
     int maxChanges = 0;
     for (final t in tiles.values) {
-      final count = t.history.length;
-      if (count > maxChanges) {
-        maxChanges = count;
+      if (t.history.length > maxChanges) {
+        maxChanges = t.history.length;
         mostChanged = t.themeId;
       }
     }
     if (mostChanged != null && maxChanges > 0) {
       final themeName = kThemes.firstWhere((th) => th.id == mostChanged).name;
       widgets.add(_buildInfoCard('🔄 交代が多いテーマ', themeName, '$maxChanges 回交代'));
+    } else {
+      widgets.add(_buildEmptyCard('🔄 交代が多いテーマ', 'まだ交代記録がありません'));
     }
 
     final stableThemes = tiles.values.where((t) => t.isKing && t.history.isEmpty).toList();
     if (stableThemes.isNotEmpty) {
       final themeName = kThemes.firstWhere((th) => th.id == stableThemes.first.themeId).name;
       widgets.add(_buildInfoCard('🏰 交代が少ないテーマ', themeName, '一度も交代なし'));
-    }
-
-    if (widgets.isEmpty) {
-      widgets.add(_buildEmptyCard('王者交代が増えると記録が生まれます'));
+    } else {
+      widgets.add(_buildEmptyCard('🏰 交代が少ないテーマ', 'まだ記録がありません'));
     }
 
     return widgets;
@@ -371,16 +353,13 @@ class ActivityScreen extends ConsumerWidget {
     if (photosWithDate.isNotEmpty) {
       photosWithDate.sort((a, b) => a.shotDate!.compareTo(b.shotDate!));
       widgets.add(_buildInfoCard('📷 最古の撮影日', _formatDate(photosWithDate.first.shotDate), ''));
-    }
-
-    if (photosWithDate.isNotEmpty) {
       widgets.add(_buildInfoCard('📷 最新の撮影日', _formatDate(photosWithDate.last.shotDate), ''));
+    } else {
+      widgets.add(_buildEmptyCard('📷 最古の撮影日', 'EXIFデータのある写真がありません'));
+      widgets.add(_buildEmptyCard('📷 最新の撮影日', 'EXIFデータのある写真がありません'));
     }
 
-    final locations = allPhotos
-        .map((p) => p.location)
-        .where((l) => l.isNotEmpty)
-        .toSet();
+    final locations = allPhotos.map((p) => p.location).where((l) => l.isNotEmpty).toSet();
     widgets.add(_buildInfoCard('📍 撮影場所', '${locations.length} カ所', ''));
 
     if (locations.isNotEmpty) {
@@ -392,10 +371,8 @@ class ActivityScreen extends ConsumerWidget {
       }
       final sorted = locationCount.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
       widgets.add(_buildInfoCard('🌊 最多撮影地', sorted.first.key, '${sorted.first.value} 枚'));
-    }
-
-    if (widgets.isEmpty) {
-      widgets.add(_buildEmptyCard('撮影場所を登録すると記録が生まれます'));
+    } else {
+      widgets.add(_buildEmptyCard('🌊 最多撮影地', '撮影場所を登録してください'));
     }
 
     return widgets;
@@ -479,15 +456,22 @@ class ActivityScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyCard(String message) {
+  Widget _buildEmptyCard(String label, String message) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A2E),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(message, style: const TextStyle(color: Colors.white24, fontSize: 13)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+          const SizedBox(height: 4),
+          Text(message, style: const TextStyle(color: Colors.white24, fontSize: 13)),
+        ],
+      ),
     );
   }
 

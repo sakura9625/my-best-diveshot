@@ -7,7 +7,7 @@ import '../../providers/bingo_provider.dart';
 import '../../widgets/bingo_overlay.dart';
 import '../../widgets/resolved_image.dart';
 import '../detail/detail_screen.dart';
-import '../activity/activity_screen.dart';
+
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -54,15 +54,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.slideshow, color: Colors.white),
             onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.bar_chart, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ActivityScreen()),
-              );
-            },
           ),
         ],
       ),
