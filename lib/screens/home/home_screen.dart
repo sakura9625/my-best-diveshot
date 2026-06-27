@@ -182,7 +182,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         );
                       },
                     ),
-                    if (completedLines.isNotEmpty)
+                    if (completedLines.isNotEmpty && !_showBingo)
                       IgnorePointer(
                         child: CustomPaint(
                           size: Size.infinite,
@@ -201,7 +201,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (_showBingo)
             BingoOverlay(
               newBingoLines: _newBingoLines,
-              onComplete: () => setState(() => _showBingo = false),
+              onComplete: () => setState(() {
+                _showBingo = false;
+                _newBingoLines = [];
+              }),
             ),
         ],
       ),

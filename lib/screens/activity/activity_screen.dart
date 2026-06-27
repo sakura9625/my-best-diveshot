@@ -45,17 +45,17 @@ class ActivityScreen extends ConsumerWidget {
 
           _buildSectionTitle('👑 王者ストーリー'),
           const SizedBox(height: 8),
-          ..._buildKingStories(tiles, kingTiles),
+          _buildTwoColumnGrid(_buildKingStories(tiles, kingTiles)),
           const SizedBox(height: 24),
 
           _buildSectionTitle('⚔️ 激戦・記録'),
           const SizedBox(height: 8),
-          ..._buildBattleStats(tiles),
+          _buildTwoColumnGrid(_buildBattleStats(tiles)),
           const SizedBox(height: 24),
 
           _buildSectionTitle('📅 撮影記録'),
           const SizedBox(height: 8),
-          ..._buildShotStats(tiles),
+          _buildTwoColumnGrid(_buildShotStats(tiles)),
           const SizedBox(height: 32),
         ],
       ),
@@ -114,66 +114,88 @@ class ActivityScreen extends ConsumerWidget {
   }
 
   Widget _buildBingoSection(List<int> bingoLines, bool isComplete, Map<String, TileData> tiles) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 1,
-          child: AspectRatio(
-            aspectRatio: 1,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            flex: 1,
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: const Color(0xFF1A1A2E),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: CustomPaint(
-                painter: _BingoGridPainter(
-                  bingoLines: bingoLines,
-                  tiles: tiles,
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: CustomPaint(
+                  painter: _BingoGridPainter(
+                    bingoLines: bingoLines,
+                    tiles: tiles,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 1,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E),
-              borderRadius: BorderRadius.circular(8),
-              border: isComplete
-                  ? Border.all(color: const Color(0xFFFFD700), width: 1.5)
-                  : null,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  isComplete ? 'コンプリート' : '現在のビンゴ',
-                  style: TextStyle(
-                    color: isComplete ? const Color(0xFFFFD700) : Colors.white54,
-                    fontSize: 12,
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 1,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A2E),
+                borderRadius: BorderRadius.circular(8),
+                border: isComplete
+                    ? Border.all(color: const Color(0xFFFFD700), width: 1.5)
+                    : null,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    isComplete ? 'コンプリート' : '現在のビンゴ',
+                    style: TextStyle(
+                      color: isComplete ? const Color(0xFFFFD700) : Colors.white54,
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                isComplete
-                    ? const Text('🏆', style: TextStyle(fontSize: 40))
-                    : Text(
-                        '${bingoLines.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
+                  const SizedBox(height: 8),
+                  isComplete
+                      ? const Text('🏆', style: TextStyle(fontSize: 40))
+                      : Text(
+                          '${bingoLines.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  Widget _buildTwoColumnGrid(List<Widget> items) {
+    final rows = <Widget>[];
+    for (int i = 0; i < items.length; i += 2) {
+      rows.add(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: items[i]),
+              const SizedBox(width: 8),
+              Expanded(child: i + 1 < items.length ? items[i + 1] : const SizedBox()),
+            ],
+          ),
+        ),
+      );
+    }
+    return Column(children: rows);
   }
 
   List<Widget> _buildKingStories(Map<String, TileData> tiles, List<TileData> kingTiles) {
@@ -492,18 +514,13 @@ class _BingoGridPainter extends CustomPainter {
     final cellW = size.width / 5;
     final cellH = size.height / 5;
 
-    final gridPaint = Paint()
-      ..color = Colors.white12
-      ..strokeWidth = 0.5
-      ..style = PaintingStyle.stroke;
-
-    for (int i = 0; i <= 5; i++) {
-      canvas.drawLine(Offset(i * cellW, 0), Offset(i * cellW, size.height), gridPaint);
-      canvas.drawLine(Offset(0, i * cellH), Offset(size.width, i * cellH), gridPaint);
-    }
+    final bgPaint = Paint()
+      ..color = const Color(0xFF0D0D1F)
+      ..style = PaintingStyle.fill;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
 
     final kingPaint = Paint()
-      ..color = const Color(0xFF00B4D8).withOpacity(0.2)
+      ..color = const Color(0xFF00B4D8).withOpacity(0.35)
       ..style = PaintingStyle.fill;
 
     for (int i = 0; i < kThemes.length; i++) {
@@ -518,9 +535,19 @@ class _BingoGridPainter extends CustomPainter {
       }
     }
 
+    final gridPaint = Paint()
+      ..color = Colors.white24
+      ..strokeWidth = 0.8
+      ..style = PaintingStyle.stroke;
+
+    for (int i = 0; i <= 5; i++) {
+      canvas.drawLine(Offset(i * cellW, 0), Offset(i * cellW, size.height), gridPaint);
+      canvas.drawLine(Offset(0, i * cellH), Offset(size.width, i * cellH), gridPaint);
+    }
+
     final linePaint = Paint()
-      ..color = const Color(0xFF00B4D8).withOpacity(0.7)
-      ..strokeWidth = 4
+      ..color = const Color(0xFF00D4FF)
+      ..strokeWidth = 5
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 

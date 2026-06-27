@@ -92,15 +92,15 @@ class RankingScreen extends ConsumerWidget {
                   tile: tile,
                   isDraggable: !isProvisional,
                   onTap: () {
-                    if (tile?.currentBest != null) {
-                      showDialog(
-                        context: context,
-                        builder: (_) => _PhotoPreviewDialog(
-                          theme: theme,
-                          tile: tile!,
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RankingGalleryScreen(
+                          rankedIds: rankedIds,
+                          tiles: tiles,
                         ),
-                      );
-                    }
+                      ),
+                    );
                   },
                 );
               },

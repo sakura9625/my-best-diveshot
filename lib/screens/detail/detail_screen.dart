@@ -235,6 +235,33 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (hasPhoto && tile?.isProvisional == true)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '合格点なら王者認定しましょう',
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      const SizedBox(height: 6),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          await ref.read(tilesProvider.notifier).crownAsKing(theme.id);
+                        },
+                        icon: const Text('👑', style: TextStyle(fontSize: 16)),
+                        label: const Text('王者に認定する'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFD700),
+                          foregroundColor: Colors.black,
+                          minimumSize: const Size(double.infinity, 48),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
               GestureDetector(
                 onTap: () {
                   if (tile?.isKing == true) {
@@ -274,7 +301,10 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                     }
                   },
                   icon: const Icon(Icons.swap_horiz, color: Color(0xFF00B4D8), size: 18),
-                  label: const Text('王者を更新する', style: TextStyle(color: Color(0xFF00B4D8))),
+                  label: Text(
+                    tile?.isKing == true ? '王者を更新する' : '王者候補を更新する',
+                    style: const TextStyle(color: Color(0xFF00B4D8)),
+                  ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF00B4D8)),
                     minimumSize: const Size(double.infinity, 44),
@@ -369,26 +399,6 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                           minimumSize: const Size(double.infinity, 36),
                         ),
                         child: const Text('歴代王者を比較する', style: TextStyle(color: Colors.white54, fontSize: 13)),
-                      ),
-                    ],
-                    const SizedBox(height: 20),
-                    if (hasPhoto && tile?.isProvisional == true) ...[
-                      const Text(
-                        '合格点なら王者認定しましょう',
-                        style: TextStyle(color: Colors.white54, fontSize: 12),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          await ref.read(tilesProvider.notifier).crownAsKing(theme.id);
-                        },
-                        icon: const Text('👑', style: TextStyle(fontSize: 16)),
-                        label: const Text('王者に認定する'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFD700),
-                          foregroundColor: Colors.black,
-                          minimumSize: const Size(double.infinity, 48),
-                        ),
                       ),
                     ],
                     const SizedBox(height: 32),
