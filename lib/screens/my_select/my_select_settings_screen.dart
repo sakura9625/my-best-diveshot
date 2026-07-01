@@ -51,7 +51,7 @@ class MySelectSettingsScreen extends ConsumerWidget {
   }
 
   void _showEditDialog(BuildContext context, WidgetRef ref, int index, String currentName) {
-    final controller = TextEditingController(text: currentName);
+    final controller = TextEditingController(text: '');
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -64,13 +64,13 @@ class MySelectSettingsScreen extends ConsumerWidget {
           controller: controller,
           autofocus: true,
           style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'テーマ名を入力',
-            hintStyle: TextStyle(color: Colors.white24),
-            enabledBorder: UnderlineInputBorder(
+          decoration: InputDecoration(
+            hintText: currentName,
+            hintStyle: const TextStyle(color: Colors.white24),
+            enabledBorder: const UnderlineInputBorder(
               borderSide: BorderSide(color: Colors.white24),
             ),
-            focusedBorder: UnderlineInputBorder(
+            focusedBorder: const UnderlineInputBorder(
               borderSide: BorderSide(color: Color(0xFF00B4D8)),
             ),
           ),
@@ -82,8 +82,9 @@ class MySelectSettingsScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () {
-              if (controller.text.isNotEmpty) {
-                ref.read(mySelectThemesProvider.notifier).updateTheme(index, controller.text);
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty) {
+                ref.read(mySelectThemesProvider.notifier).updateTheme(index, newName);
               }
               Navigator.pop(context);
             },

@@ -5,7 +5,8 @@ class SheetDefinition {
   final String name;
   final SheetType type;
   final int order;
-  final int? unlockRequiredBingos; // 解放に必要なOWビンゴ数
+  final int? unlockRequiredBingos;
+  final String? unlockRequiredSheetId; // どのシートのビンゴが必要か
 
   const SheetDefinition({
     required this.id,
@@ -13,13 +14,28 @@ class SheetDefinition {
     required this.type,
     required this.order,
     this.unlockRequiredBingos,
+    this.unlockRequiredSheetId,
   });
 }
 
 const kDefaultSheets = [
   SheetDefinition(id: 'open_water', name: 'Open Water', type: SheetType.openWater, order: 0),
-  SheetDefinition(id: 'advance', name: 'Advanced', type: SheetType.advance, order: 1, unlockRequiredBingos: 3),
-  SheetDefinition(id: 'my_select', name: 'My Select', type: SheetType.mySelect, order: 2, unlockRequiredBingos: 3),
+  SheetDefinition(
+    id: 'advance',
+    name: 'Advanced',
+    type: SheetType.advance,
+    order: 1,
+    unlockRequiredBingos: 3,
+    unlockRequiredSheetId: 'open_water',
+  ),
+  SheetDefinition(
+    id: 'my_select',
+    name: 'My Select',
+    type: SheetType.mySelect,
+    order: 2,
+    unlockRequiredBingos: 3,
+    unlockRequiredSheetId: 'advance',
+  ),
 ];
 
 // 追加ビンゴシート定義（課金）

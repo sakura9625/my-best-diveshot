@@ -71,7 +71,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
           backgroundColor: const Color(0xFF1A1A2E),
           title: const Text('注意', style: TextStyle(color: Colors.white)),
           content: const Text(
-            '王者候補を更新すると、現在の仮登録写真は削除されます。\n\nよろしいですか？',
+            '王者候補を更新すると、現在の仮登録写真は削除されます。\nよろしいですか？\n\n（王者認定すると別の写真に更新しても記録に残ります）',
             style: TextStyle(color: Colors.white70),
           ),
           actions: [

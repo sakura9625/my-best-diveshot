@@ -61,13 +61,15 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     if (existing == null || existing.currentBest == null) return;
     if (existing.isKing) return;
 
-    final prevCrownCount = existing.history.isNotEmpty
-        ? existing.history.map((h) => h.crownCount).reduce((a, b) => a > b ? a : b)
-        : 0;
+    final allCrownCounts = [
+      ...existing.history.map((h) => h.crownCount),
+      existing.currentBest!.crownCount,
+    ];
+    final maxCrownCount = allCrownCounts.isEmpty ? 0 : allCrownCounts.reduce((a, b) => a > b ? a : b);
 
     final crowned = existing.currentBest!.copyWith(
       crownedAt: DateTime.now(),
-      crownCount: prevCrownCount + 1,
+      crownCount: maxCrownCount + 1,
       isRestored: false,
     );
 

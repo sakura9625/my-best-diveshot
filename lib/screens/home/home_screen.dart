@@ -290,6 +290,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _buildLockedSlot(),
             ],
           ),
+          // My Select説明文
+          Consumer(
+            builder: (context, ref, _) {
+              final sheetId = ref.watch(currentSheetProvider);
+              if (sheetId != 'my_select') return const SizedBox.shrink();
+              return const Padding(
+                padding: EdgeInsets.fromLTRB(4, 6, 4, 0),
+                child: Text(
+                  '上部の鉛筆マークから自分の好きなテーマを登録できます',
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            },
+          ),
           const SizedBox(height: 8),
           const Divider(height: 1, color: Colors.white12),
         ],
@@ -301,9 +316,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isSelected = sheetId == currentSheetId;
     final isUnlocked = ref.watch(sheetUnlockedProvider(sheetId));
     final completedCount = ref.watch(completedCountProvider(sheetId));
-    final owBingoCount = ref.watch(bingoCountProvider('open_water'));
     final sheet = kDefaultSheets.firstWhere((s) => s.id == sheetId);
     final requiredBingos = sheet.unlockRequiredBingos;
+    final requiredSheetId = sheet.unlockRequiredSheetId ?? 'open_water';
+    final currentBingoCount = ref.watch(bingoCountProvider(requiredSheetId));
+    final requiredSheetName = kDefaultSheets.firstWhere((s) => s.id == requiredSheetId).name;
 
     return Expanded(
       child: GestureDetector(
@@ -347,13 +364,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               : Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.lock_outline, color: Colors.white38, size: 16),
+                    const Icon(Icons.lock_outline, color: Colors.white38, size: 14),
                     const SizedBox(height: 2),
                     Text(
-                      'OW ${owBingoCount}/${requiredBingos}ビンゴ',
+                      '$requiredSheetName',
+                      style: const TextStyle(color: Colors.white24, fontSize: 9),
+                    ),
+                    Text(
+                      '$currentBingoCount/${requiredBingos}ビンゴ',
                       style: const TextStyle(color: Colors.white38, fontSize: 9),
                     ),
-                    const SizedBox(height: 2),
                     Text(name, style: const TextStyle(color: Colors.white38, fontSize: 11)),
                   ],
                 ),

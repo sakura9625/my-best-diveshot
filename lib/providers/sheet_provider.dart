@@ -12,7 +12,6 @@ final currentSheetDefinitionProvider = Provider<SheetDefinition>((ref) {
   );
 });
 
-// シートがアンロック済みかどうか
 final sheetUnlockedProvider = Provider.family<bool, String>((ref, sheetId) {
   if (sheetId == 'open_water') return true;
   final sheet = kDefaultSheets.firstWhere(
@@ -20,6 +19,7 @@ final sheetUnlockedProvider = Provider.family<bool, String>((ref, sheetId) {
     orElse: () => kDefaultSheets.first,
   );
   if (sheet.unlockRequiredBingos == null) return true;
-  final owBingoCount = ref.watch(bingoCountProvider('open_water'));
-  return owBingoCount >= sheet.unlockRequiredBingos!;
+  final requiredSheetId = sheet.unlockRequiredSheetId ?? 'open_water';
+  final bingoCount = ref.watch(bingoCountProvider(requiredSheetId));
+  return bingoCount >= sheet.unlockRequiredBingos!;
 });
