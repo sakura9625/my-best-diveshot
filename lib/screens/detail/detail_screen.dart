@@ -295,7 +295,8 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                   if (tile?.isKing == true) {
                     ref.read(tilesProvider(widget.sheetId).notifier).updateKing(theme.id);
                   } else {
-                    _showImageSourcePicker(theme.id, isProvisional: tile?.isProvisional == true);
+                    final isProvisional = tile?.isProvisional == true;
+                    _showImageSourcePicker(theme.id, isProvisional: isProvisional);
                   }
                 },
                 child: hasPhoto && photo != null
@@ -321,7 +322,10 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: OutlinedButton.icon(
-                  onPressed: () => _showImageSourcePicker(theme.id, isProvisional: tile?.isProvisional == true),
+                  onPressed: () {
+                    final isProvisional = tile?.isProvisional == true;
+                    _showImageSourcePicker(theme.id, isProvisional: isProvisional);
+                  },
                   icon: const Icon(Icons.swap_horiz, color: Color(0xFF00B4D8), size: 18),
                   label: Text(
                     tile?.isKing == true ? '王者を更新する' : '王者候補を更新する',

@@ -23,11 +23,15 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   List<int> _newBingoLines = [];
   bool _showBingo = false;
+  List<int> _lastCompletedLines = [];
 
   void _checkNewBingo(String sheetId) {
     final currentLines = ref.read(completedBingoLinesProvider(sheetId));
     final notifier = ref.read(tilesProvider(sheetId).notifier);
     final newLines = notifier.getNewlyCompletedLines(currentLines);
+    setState(() {
+      _lastCompletedLines = currentLines;
+    });
     if (newLines.isNotEmpty) {
       setState(() {
         _newBingoLines = newLines;
@@ -69,18 +73,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         actions: [
-          if (currentSheetId == 'my_select')
-            IconButton(
-              icon: const Icon(Icons.edit, color: Colors.white),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const MySelectSettingsScreen(),
-                  ),
-                );
-              },
-            ),
+          Consumer(
+            builder: (context, ref, _) {
+              final sheetId = ref.watch(currentSheetProvider);
+              if (sheetId != 'my_select') return const SizedBox.shrink();
+              return IconButton(
+                icon: const Icon(Icons.edit, color: Colors.white),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MySelectSettingsScreen(),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.slideshow, color: Colors.white),
             onPressed: () {},
@@ -224,12 +233,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         );
                       },
                     ),
-                    if (completedLines.isNotEmpty && !_showBingo)
+                    if (_lastCompletedLines.isNotEmpty && !_showBingo)
                       IgnorePointer(
                         child: CustomPaint(
                           size: Size.infinite,
                           painter: BingoLinePainter(
-                            completedLines: completedLines,
+                            completedLines: _lastCompletedLines,
                             padding: 8,
                             spacing: 4,
                           ),
@@ -247,6 +256,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onComplete: () => setState(() {
                 _showBingo = false;
                 _newBingoLines = [];
+                _lastCompletedLines = [];
               }),
             ),
         ],
