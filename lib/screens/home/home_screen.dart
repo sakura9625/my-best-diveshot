@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/themes.dart';
 import '../../constants/advance_themes.dart';
+import '../../constants/sheet_definitions.dart';
 import '../../providers/tiles_provider.dart';
 import '../../providers/bingo_provider.dart';
 import '../../providers/sheet_provider.dart';
+import '../../providers/my_select_provider.dart';
 import '../../widgets/bingo_overlay.dart';
 import '../../widgets/resolved_image.dart';
 import '../detail/detail_screen.dart';
+import '../my_select/my_select_settings_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -33,12 +36,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  List<ThemeDefinition> _getThemes(String sheetId) {
+  List<ThemeDefinition> _getThemes(String sheetId, List<ThemeDefinition> mySelectThemeDefs) {
     switch (sheetId) {
       case 'advance':
         return kAdvanceThemes;
       case 'my_select':
-        return kThemes;
+        return mySelectThemeDefs;
       default:
         return kThemes;
     }
@@ -50,7 +53,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final tiles = ref.watch(tilesProvider(currentSheetId));
     final completedCount = ref.watch(completedCountProvider(currentSheetId));
     final completedLines = ref.watch(completedBingoLinesProvider(currentSheetId));
-    final themes = _getThemes(currentSheetId);
+    final mySelectThemeDefs = ref.watch(mySelectThemeDefinitionsProvider);
+    final themes = _getThemes(currentSheetId, mySelectThemeDefs);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A1A),
@@ -65,6 +69,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         actions: [
+          if (currentSheetId == 'my_select')
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.white),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MySelectSettingsScreen(),
+                  ),
+                );
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.slideshow, color: Colors.white),
             onPressed: () {},
@@ -273,14 +289,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildSheetCard(WidgetRef ref, String sheetId, String name, String currentSheetId) {
     final isSelected = sheetId == currentSheetId;
+    final isUnlocked = ref.watch(sheetUnlockedProvider(sheetId));
     final completedCount = ref.watch(completedCountProvider(sheetId));
-    final isUnlocked = sheetId == 'open_water' || sheetId == 'my_select';
-    final isAdvance = sheetId == 'advance';
+    final owBingoCount = ref.watch(bingoCountProvider('open_water'));
+    final sheet = kDefaultSheets.firstWhere((s) => s.id == sheetId);
+    final requiredBingos = sheet.unlockRequiredBingos;
 
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          if (isUnlocked || isAdvance) {
+          if (isUnlocked) {
             ref.read(currentSheetProvider.notifier).state = sheetId;
           }
         },
@@ -294,35 +312,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               width: isSelected ? 1.5 : 1,
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (isAdvance) ...[
-                const Icon(Icons.lock_outline, color: Colors.white38, size: 16),
-                const SizedBox(height: 2),
-                const Text('未解放', style: TextStyle(color: Colors.white38, fontSize: 10)),
-                const SizedBox(height: 2),
-                Text(name, style: const TextStyle(color: Colors.white38, fontSize: 11)),
-              ] else ...[
-                Text(
-                  '$completedCount/25',
-                  style: TextStyle(
-                    color: isSelected ? const Color(0xFF00B4D8) : Colors.white70,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+          child: isUnlocked
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '$completedCount/25',
+                      style: TextStyle(
+                        color: isSelected ? const Color(0xFF00B4D8) : Colors.white70,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      name,
+                      style: TextStyle(
+                        color: isSelected ? const Color(0xFF00B4D8) : Colors.white54,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.lock_outline, color: Colors.white38, size: 16),
+                    const SizedBox(height: 2),
+                    Text(
+                      'OW ${owBingoCount}/${requiredBingos}ビンゴ',
+                      style: const TextStyle(color: Colors.white38, fontSize: 9),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(name, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  name,
-                  style: TextStyle(
-                    color: isSelected ? const Color(0xFF00B4D8) : Colors.white54,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ],
-          ),
         ),
       ),
     );

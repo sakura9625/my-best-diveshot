@@ -63,7 +63,31 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
     _selectedMonth = photo.divingMonth;
   }
 
-  Future<void> _showImageSourcePicker(String themeId) async {
+  Future<void> _showImageSourcePicker(String themeId, {bool isProvisional = false}) async {
+    if (isProvisional) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          title: const Text('注意', style: TextStyle(color: Colors.white)),
+          content: const Text(
+            '王者候補を更新すると、現在の仮登録写真は削除されます。\n\nよろしいですか？',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('更新する', style: TextStyle(color: Color(0xFF00B4D8))),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
     await ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(themeId);
   }
 
@@ -271,7 +295,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                   if (tile?.isKing == true) {
                     ref.read(tilesProvider(widget.sheetId).notifier).updateKing(theme.id);
                   } else {
-                    ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(theme.id);
+                    _showImageSourcePicker(theme.id, isProvisional: tile?.isProvisional == true);
                   }
                 },
                 child: hasPhoto && photo != null
@@ -297,13 +321,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    if (tile?.isKing == true) {
-                      ref.read(tilesProvider(widget.sheetId).notifier).updateKing(theme.id);
-                    } else {
-                      ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(theme.id);
-                    }
-                  },
+                  onPressed: () => _showImageSourcePicker(theme.id, isProvisional: tile?.isProvisional == true),
                   icon: const Icon(Icons.swap_horiz, color: Color(0xFF00B4D8), size: 18),
                   label: Text(
                     tile?.isKing == true ? '王者を更新する' : '王者候補を更新する',

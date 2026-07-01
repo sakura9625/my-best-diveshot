@@ -12,6 +12,13 @@ class ThemeDefinition {
     required this.category,
     required this.gridIndex,
   });
+
+  factory ThemeDefinition.mySelect(int index, String name) => ThemeDefinition(
+    id: 'my_select_$index',
+    name: name,
+    category: TileCategory.creature,
+    gridIndex: index,
+  );
 }
 
 const List<ThemeDefinition> kThemes = [

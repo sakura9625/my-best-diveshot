@@ -1,14 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/themes.dart';
 import '../constants/advance_themes.dart';
+import '../models/my_select_theme.dart';
+import '../providers/my_select_provider.dart';
 import 'tiles_provider.dart';
 
-List<ThemeDefinition> getThemesForSheet(String sheetId) {
+List<ThemeDefinition> getThemesForSheet(String sheetId, {List<ThemeDefinition>? mySelectThemes}) {
   switch (sheetId) {
     case 'advance':
       return kAdvanceThemes;
     case 'my_select':
-      return kThemes;
+      return mySelectThemes ?? kDefaultMySelectThemes.map((t) => toThemeDefinition(t)).toList();
     default:
       return kThemes;
   }
