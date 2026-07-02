@@ -13,15 +13,6 @@ final currentSheetDefinitionProvider = Provider<SheetDefinition>((ref) {
 });
 
 final sheetUnlockedProvider = Provider.family<bool, String>((ref, sheetId) {
-  if (sheetId == 'open_water') return true;
-
-  final sheetIndex = kDefaultSheets.indexWhere((s) => s.id == sheetId);
-  if (sheetIndex == -1) return false;
-
-  final sheet = kDefaultSheets[sheetIndex];
-  if (sheet.unlockRequiredBingos == null) return true;
-
-  final requiredSheetId = sheet.unlockRequiredSheetId ?? 'open_water';
-  final bingoCount = ref.watch(bingoCountProvider(requiredSheetId));
-  return bingoCount >= sheet.unlockRequiredBingos!;
+  // デバッグ用：常にアンロック
+  return true;
 });

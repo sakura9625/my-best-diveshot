@@ -18,6 +18,11 @@ class ActivityScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sheetId = ref.watch(currentSheetProvider);
     final isUnlocked = ref.watch(sheetUnlockedProvider(sheetId));
+    debugPrint('ActivityScreen: sheetId=$sheetId, isUnlocked=$isUnlocked');
+    if (sheetId == 'advance') {
+      final owBingo = ref.watch(bingoCountProvider('open_water'));
+      debugPrint('ActivityScreen: OW bingo count=$owBingo');
+    }
 
     if (!isUnlocked) {
       final sheet = kDefaultSheets.firstWhere((s) => s.id == sheetId);
