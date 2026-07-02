@@ -1,24 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/themes.dart';
 import '../constants/advance_themes.dart';
-import '../models/my_select_theme.dart';
-import '../providers/my_select_provider.dart';
 import 'tiles_provider.dart';
-
-List<ThemeDefinition> getThemesForSheet(String sheetId, {List<ThemeDefinition>? mySelectThemes}) {
-  switch (sheetId) {
-    case 'advance':
-      return kAdvanceThemes;
-    case 'my_select':
-      return mySelectThemes ?? kDefaultMySelectThemes.map((t) => toThemeDefinition(t)).toList();
-    default:
-      return kThemes;
-  }
-}
+import 'my_select_provider.dart';
 
 final completedBingoLinesProvider = Provider.family<List<int>, String>((ref, sheetId) {
   final tiles = ref.watch(tilesProvider(sheetId));
-  final themes = getThemesForSheet(sheetId);
+  final List<ThemeDefinition> themes;
+
+  switch (sheetId) {
+    case 'advance':
+      themes = kAdvanceThemes;
+      break;
+    case 'my_select':
+      // mySelectThemeDefinitionsProviderから最新のテーマを取得
+      themes = ref.watch(mySelectThemeDefinitionsProvider);
+      break;
+    default:
+      themes = kThemes;
+  }
+
   final completedLines = <int>[];
 
   for (int i = 0; i < kBingoLines.length; i++) {
