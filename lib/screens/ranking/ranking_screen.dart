@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../constants/themes.dart';
+import '../../constants/advance_themes.dart';
 import '../../models/tile_data.dart';
 import '../../providers/tiles_provider.dart';
 import '../../providers/ranking_provider.dart';
@@ -11,6 +12,18 @@ import '../../widgets/sheet_tab_bar.dart';
 
 class RankingScreen extends ConsumerWidget {
   const RankingScreen({super.key});
+
+  ThemeDefinition? _getThemeDefinition(String id) {
+    final ow = kThemes.where((t) => t.id == id).toList();
+    if (ow.isNotEmpty) return ow.first;
+    final adv = kAdvanceThemes.where((t) => t.id == id).toList();
+    if (adv.isNotEmpty) return adv.first;
+    if (id.startsWith('my_select_')) {
+      final index = int.tryParse(id.replaceFirst('my_select_', '')) ?? 0;
+      return ThemeDefinition.mySelect(index, 'My Select ${index + 1}');
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -138,7 +151,8 @@ class RankingScreen extends ConsumerWidget {
                     ? provisionalIds[index - rankedIds.length - 1]
                     : rankedIds[index];
                 final tile = tiles[id];
-                final theme = kThemes.firstWhere((t) => t.id == id);
+                final theme = _getThemeDefinition(id);
+                if (theme == null) return const SizedBox.shrink(key: ValueKey('unknown'));
                 final rank = isProvisional ? null : index + 1;
 
                 return _RankingCard(
@@ -343,6 +357,18 @@ class RankingGalleryScreen extends StatelessWidget {
     required this.tiles,
   });
 
+  ThemeDefinition? _getThemeDefinition(String id) {
+    final ow = kThemes.where((t) => t.id == id).toList();
+    if (ow.isNotEmpty) return ow.first;
+    final adv = kAdvanceThemes.where((t) => t.id == id).toList();
+    if (adv.isNotEmpty) return adv.first;
+    if (id.startsWith('my_select_')) {
+      final index = int.tryParse(id.replaceFirst('my_select_', '')) ?? 0;
+      return ThemeDefinition.mySelect(index, 'My Select ${index + 1}');
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -358,7 +384,8 @@ class RankingGalleryScreen extends StatelessWidget {
         itemBuilder: (context, index) {
           final id = rankedIds[index];
           final tile = tiles[id];
-          final theme = kThemes.firstWhere((t) => t.id == id);
+          final theme = _getThemeDefinition(id);
+          if (theme == null) return const SizedBox.shrink();
           final photo = tile?.currentBest;
 
           return Container(
