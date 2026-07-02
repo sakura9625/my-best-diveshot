@@ -14,11 +14,13 @@ final currentSheetDefinitionProvider = Provider<SheetDefinition>((ref) {
 
 final sheetUnlockedProvider = Provider.family<bool, String>((ref, sheetId) {
   if (sheetId == 'open_water') return true;
-  final sheet = kDefaultSheets.firstWhere(
-    (s) => s.id == sheetId,
-    orElse: () => kDefaultSheets.first,
-  );
+
+  final sheetIndex = kDefaultSheets.indexWhere((s) => s.id == sheetId);
+  if (sheetIndex == -1) return false;
+
+  final sheet = kDefaultSheets[sheetIndex];
   if (sheet.unlockRequiredBingos == null) return true;
+
   final requiredSheetId = sheet.unlockRequiredSheetId ?? 'open_water';
   final bingoCount = ref.watch(bingoCountProvider(requiredSheetId));
   return bingoCount >= sheet.unlockRequiredBingos!;

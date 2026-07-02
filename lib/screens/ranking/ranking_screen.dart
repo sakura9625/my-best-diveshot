@@ -62,7 +62,7 @@ class RankingScreen extends ConsumerWidget {
       );
     }
 
-    final ranking = ref.watch(rankingProvider);
+    final ranking = ref.watch(rankingProvider(sheetId));
     final tiles = ref.watch(tilesProvider(sheetId));
 
     final rankedIds = ranking.where((id) {
@@ -116,7 +116,7 @@ class RankingScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(12),
                     onReorder: (oldIndex, newIndex) {
                 if (oldIndex < rankedIds.length && newIndex <= rankedIds.length) {
-                  final allRanking = ref.read(rankingProvider);
+                  final allRanking = ref.read(rankingProvider(sheetId));
                   final kingOldIndex = allRanking.indexOf(rankedIds[oldIndex]);
                   int kingNewIndex;
                   if (newIndex >= rankedIds.length) {
@@ -124,7 +124,7 @@ class RankingScreen extends ConsumerWidget {
                   } else {
                     kingNewIndex = allRanking.indexOf(rankedIds[newIndex]);
                   }
-                  ref.read(rankingProvider.notifier).reorder(kingOldIndex, kingNewIndex);
+                  ref.read(rankingProvider(sheetId).notifier).reorder(kingOldIndex, kingNewIndex);
                 }
               },
               itemCount: rankedIds.length + (provisionalIds.isNotEmpty ? provisionalIds.length + 1 : 0),
