@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../constants/themes.dart';
+import '../../constants/advance_themes.dart';
 import '../../models/tile_data.dart';
 import '../../models/best_photo.dart';
 import '../../providers/tiles_provider.dart';
@@ -326,7 +327,7 @@ class ActivityScreen extends ConsumerWidget {
         if (p.crownedAt != null) {
           if (longestReign == null || p.crownedAt!.isBefore(longestReign.crownedAt!)) {
             longestReign = p;
-            longestThemeName = kThemes.firstWhere((th) => th.id == t.themeId).name;
+            longestThemeName = _getThemeName(t.themeId);
           }
         }
       }
@@ -345,7 +346,7 @@ class ActivityScreen extends ConsumerWidget {
         if (p.crownedAt != null) {
           if (shortestReign == null || p.crownedAt!.isAfter(shortestReign.crownedAt!)) {
             shortestReign = p;
-            shortestThemeName = kThemes.firstWhere((th) => th.id == t.themeId).name;
+            shortestThemeName = _getThemeName(t.themeId);
           }
         }
       }
@@ -376,7 +377,7 @@ class ActivityScreen extends ConsumerWidget {
     }
     if (hotThemes.isNotEmpty) {
       final sorted = hotThemes.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-      final themeName = kThemes.firstWhere((th) => th.id == sorted.first.key).name;
+      final themeName = _getThemeName(sorted.first.key);
       widgets.add(_buildInfoCard('🔥 激戦テーマ', themeName, '直近90日で ${sorted.first.value} 回交代'));
     } else {
       widgets.add(_buildEmptyCard('🔥 激戦テーマ', '直近90日で5回以上交代したテーマはありません'));
@@ -393,7 +394,7 @@ class ActivityScreen extends ConsumerWidget {
       }
     }
     if (restoreTheme != null && maxRestore > 0) {
-      final themeName = kThemes.firstWhere((th) => th.id == restoreTheme).name;
+      final themeName = _getThemeName(restoreTheme);
       widgets.add(_buildInfoCard('⚔️ 王者奪還', themeName, '$maxRestore 回復活'));
     } else {
       widgets.add(_buildEmptyCard('⚔️ 王者奪還', 'まだ復活した王者はいません'));
@@ -408,7 +409,7 @@ class ActivityScreen extends ConsumerWidget {
       }
     }
     if (mostChanged != null && maxChanges > 0) {
-      final themeName = kThemes.firstWhere((th) => th.id == mostChanged).name;
+      final themeName = _getThemeName(mostChanged);
       widgets.add(_buildInfoCard('🔄 交代が多いテーマ', themeName, '$maxChanges 回交代'));
     } else {
       widgets.add(_buildEmptyCard('🔄 交代が多いテーマ', 'まだ交代記録がありません'));
@@ -416,7 +417,7 @@ class ActivityScreen extends ConsumerWidget {
 
     final stableThemes = tiles.values.where((t) => t.isKing && t.history.isEmpty).toList();
     if (stableThemes.isNotEmpty) {
-      final themeName = kThemes.firstWhere((th) => th.id == stableThemes.first.themeId).name;
+      final themeName = _getThemeName(stableThemes.first.themeId);
       widgets.add(_buildInfoCard('🏰 交代が少ないテーマ', themeName, '一度も交代なし'));
     } else {
       widgets.add(_buildEmptyCard('🏰 交代が少ないテーマ', 'まだ記録がありません'));
@@ -464,9 +465,24 @@ class ActivityScreen extends ConsumerWidget {
     return widgets;
   }
 
+  String _getThemeName(String themeId) {
+    // OWテーマから検索
+    final owTheme = kThemes.where((th) => th.id == themeId).toList();
+    if (owTheme.isNotEmpty) return owTheme.first.name;
+    // Advancedテーマから検索
+    final advTheme = kAdvanceThemes.where((th) => th.id == themeId).toList();
+    if (advTheme.isNotEmpty) return advTheme.first.name;
+    // My Selectテーマ（my_select_Nの形式）
+    if (themeId.startsWith('my_select_')) {
+      final index = int.tryParse(themeId.replaceFirst('my_select_', ''));
+      if (index != null) return 'My Select ${index + 1}';
+    }
+    return themeId;
+  }
+
   Widget _buildKingStoryCard(String label, TileData tile, {String? subtitle}) {
     final photo = tile.currentBest;
-    final themeName = kThemes.firstWhere((th) => th.id == tile.themeId).name;
+    final themeName = _getThemeName(tile.themeId);
     return _buildPhotoCard(label, photo!, themeName, subtitle ?? '');
   }
 
