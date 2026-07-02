@@ -12,6 +12,7 @@ import '../../widgets/bingo_overlay.dart';
 import '../../widgets/resolved_image.dart';
 import '../detail/detail_screen.dart';
 import '../my_select/my_select_settings_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +25,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   List<int> _newBingoLines = [];
   bool _showBingo = false;
   List<int> _lastCompletedLines = [];
+  bool _mySelectWelcomeShown = false;
 
   void _checkNewBingo(String sheetId) {
     final currentLines = ref.read(completedBingoLinesProvider(sheetId));
@@ -271,6 +273,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       child: Column(
         children: [
+          // My Select説明文（グリッドの直下・シートカードの上）
+          Consumer(
+            builder: (context, ref, _) {
+              final sheetId = ref.watch(currentSheetProvider);
+              if (sheetId != 'my_select') return const SizedBox.shrink();
+              return const Padding(
+                padding: EdgeInsets.fromLTRB(4, 0, 4, 8),
+                child: Text(
+                  '上部の鉛筆マークから自分の好きなテーマを登録できます',
+                  style: TextStyle(color: Colors.white, fontSize: 11),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            },
+          ),
+          // 上段：3シート
           Row(
             children: [
               _buildSheetCard(ref, 'open_water', 'Open Water', currentSheetId),
@@ -281,6 +299,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           const SizedBox(height: 8),
+          // 下段：追加スロット
           Row(
             children: [
               _buildLockedSlot(),
@@ -290,26 +309,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _buildLockedSlot(),
             ],
           ),
-          // My Select説明文
-          Consumer(
-            builder: (context, ref, _) {
-              final sheetId = ref.watch(currentSheetProvider);
-              if (sheetId != 'my_select') return const SizedBox.shrink();
-              return const Padding(
-                padding: EdgeInsets.fromLTRB(4, 6, 4, 0),
-                child: Text(
-                  '上部の鉛筆マークから自分の好きなテーマを登録できます',
-                  style: TextStyle(color: Colors.white38, fontSize: 11),
-                  textAlign: TextAlign.center,
-                ),
-              );
-            },
-          ),
           const SizedBox(height: 8),
           const Divider(height: 1, color: Colors.white12),
         ],
       ),
     );
+  }
+
+  void _showMySelectWelcomeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('My Select', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          '上部の鉛筆マークから自分の好きなテーマを登録して、自由にビンゴをつくれます。またほかのビンゴを購入することもできます。',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: Color(0xFF00B4D8))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLockedDialog(BuildContext context, String requiredSheetName, int requiredBingos) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('ロック中', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'まだロックされています。$requiredSheetNameのビンゴを$requiredBingos個以上揃えると解放されます。',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: Color(0xFF00B4D8))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _checkAndShowMySelectWelcome(BuildContext context) async {
+    if (_mySelectWelcomeShown) return;
+    final prefs = await SharedPreferences.getInstance();
+    final shown = prefs.getBool('my_select_welcome_shown') ?? false;
+    if (!shown) {
+      _mySelectWelcomeShown = true;
+      await prefs.setBool('my_select_welcome_shown', true);
+      if (context.mounted) _showMySelectWelcomeDialog(context);
+    }
   }
 
   Widget _buildSheetCard(WidgetRef ref, String sheetId, String name, String currentSheetId) {
@@ -327,6 +382,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onTap: () {
           if (isUnlocked) {
             ref.read(currentSheetProvider.notifier).state = sheetId;
+            if (sheetId == 'my_select') {
+              _checkAndShowMySelectWelcome(context);
+            }
+          } else {
+            _showLockedDialog(context, requiredSheetName, requiredBingos ?? 3);
           }
         },
         child: Container(

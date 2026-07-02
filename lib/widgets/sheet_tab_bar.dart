@@ -3,9 +3,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/sheet_definitions.dart';
 import '../providers/sheet_provider.dart';
 import '../providers/tiles_provider.dart';
+import '../providers/bingo_provider.dart';
 
 class SheetTabBar extends ConsumerWidget {
   const SheetTabBar({super.key});
+
+  void _showLockedDialog(BuildContext context, String requiredSheetName, int requiredBingos) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('ロック中', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'まだロックされています。$requiredSheetNameのビンゴを$requiredBingos個以上揃えると解放されます。',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: Color(0xFF00B4D8))),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -16,14 +37,20 @@ class SheetTabBar extends ConsumerWidget {
       child: Row(
         children: kDefaultSheets.map((sheet) {
           final isSelected = sheet.id == currentSheetId;
-          final isLocked = sheet.id == 'advance';
+          final isUnlocked = ref.watch(sheetUnlockedProvider(sheet.id));
           final completedCount = ref.watch(completedCountProvider(sheet.id));
+          final requiredSheetId = sheet.unlockRequiredSheetId ?? 'open_water';
+          final requiredSheetName = kDefaultSheets.firstWhere((s) => s.id == requiredSheetId).name;
+          final currentBingoCount = ref.watch(bingoCountProvider(requiredSheetId));
+          final requiredBingos = sheet.unlockRequiredBingos ?? 3;
 
           return Expanded(
             child: GestureDetector(
               onTap: () {
-                if (!isLocked) {
+                if (isUnlocked) {
                   ref.read(currentSheetProvider.notifier).state = sheet.id;
+                } else {
+                  _showLockedDialog(context, requiredSheetName, requiredBingos);
                 }
               },
               child: Container(
@@ -39,8 +66,11 @@ class SheetTabBar extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (isLocked)
-                      const Icon(Icons.lock_outline, color: Colors.white24, size: 14)
+                    if (!isUnlocked)
+                      Text(
+                        '$currentBingoCount/$requiredBingos',
+                        style: const TextStyle(color: Colors.white24, fontSize: 10),
+                      )
                     else
                       Text(
                         '$completedCount/25',
@@ -51,16 +81,26 @@ class SheetTabBar extends ConsumerWidget {
                         ),
                       ),
                     const SizedBox(height: 2),
-                    Text(
-                      sheet.name,
-                      style: TextStyle(
-                        color: isSelected
-                            ? const Color(0xFF00B4D8)
-                            : isLocked
-                                ? Colors.white24
-                                : Colors.white54,
-                        fontSize: 12,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (!isUnlocked)
+                          const Padding(
+                            padding: EdgeInsets.only(right: 2),
+                            child: Icon(Icons.lock_outline, color: Colors.white24, size: 10),
+                          ),
+                        Text(
+                          sheet.name,
+                          style: TextStyle(
+                            color: isSelected
+                                ? const Color(0xFF00B4D8)
+                                : isUnlocked
+                                    ? Colors.white54
+                                    : Colors.white24,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

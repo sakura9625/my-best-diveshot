@@ -5,6 +5,7 @@ import '../../models/tile_data.dart';
 import '../../providers/tiles_provider.dart';
 import '../../providers/ranking_provider.dart';
 import '../../providers/sheet_provider.dart';
+import '../../constants/sheet_definitions.dart';
 import '../../widgets/resolved_image.dart';
 import '../../widgets/sheet_tab_bar.dart';
 
@@ -14,6 +15,53 @@ class RankingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sheetId = ref.watch(currentSheetProvider);
+    final isUnlocked = ref.watch(sheetUnlockedProvider(sheetId));
+
+    if (!isUnlocked) {
+      final sheet = kDefaultSheets.firstWhere((s) => s.id == sheetId);
+      final requiredSheetId = sheet.unlockRequiredSheetId ?? 'open_water';
+      final requiredSheetName = kDefaultSheets.firstWhere((s) => s.id == requiredSheetId).name;
+      final requiredBingos = sheet.unlockRequiredBingos ?? 3;
+
+      return Scaffold(
+        backgroundColor: const Color(0xFF0A0A1A),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF0A0A1A),
+          title: const Text('ランキング', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        ),
+        body: Column(
+          children: [
+            const SheetTabBar(),
+            const Divider(height: 1, color: Colors.white12),
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.lock_outline, color: Colors.white24, size: 48),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'まだロックされています',
+                        style: TextStyle(color: Colors.white54, fontSize: 16),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '$requiredSheetNameのビンゴを$requiredBingos個以上揃えると解放されます',
+                        style: const TextStyle(color: Colors.white38, fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final ranking = ref.watch(rankingProvider);
     final tiles = ref.watch(tilesProvider(sheetId));
 
