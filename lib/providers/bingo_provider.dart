@@ -1,8 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/themes.dart';
 import '../constants/advance_themes.dart';
+import '../constants/extra_sheet_themes.dart';
+import '../constants/sheet_definitions.dart';
 import 'tiles_provider.dart';
 import 'my_select_provider.dart';
+
+List<ThemeDefinition> getThemesForSheet(String sheetId, {List<ThemeDefinition>? mySelectThemes}) {
+  switch (sheetId) {
+    case 'advance':
+      return kAdvanceThemes;
+    case 'my_select':
+      return mySelectThemes ?? kDefaultMySelectThemes.map((t) => toThemeDefinition(t)).toList();
+    default:
+      // 追加シートのテーマを検索
+      if (kExtraSheetThemesMap.containsKey(sheetId)) {
+        return kExtraSheetThemesMap[sheetId]!;
+      }
+      return kThemes;
+  }
+}
 
 final completedBingoLinesProvider = Provider.family<List<int>, String>((ref, sheetId) {
   final tiles = ref.watch(tilesProvider(sheetId));
@@ -17,7 +34,7 @@ final completedBingoLinesProvider = Provider.family<List<int>, String>((ref, she
       themes = ref.watch(mySelectThemeDefinitionsProvider);
       break;
     default:
-      themes = kThemes;
+      themes = kExtraSheetThemesMap[sheetId] ?? kThemes;
   }
 
   final completedLines = <int>[];

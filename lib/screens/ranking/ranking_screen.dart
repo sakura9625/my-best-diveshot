@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../constants/themes.dart';
 import '../../constants/advance_themes.dart';
+import '../../constants/extra_sheet_themes.dart';
 import '../../models/tile_data.dart';
 import '../../providers/tiles_provider.dart';
 import '../../providers/ranking_provider.dart';
@@ -14,10 +15,17 @@ class RankingScreen extends ConsumerWidget {
   const RankingScreen({super.key});
 
   ThemeDefinition? _getThemeDefinition(String id) {
-    final ow = kThemes.where((t) => t.id == id).toList();
-    if (ow.isNotEmpty) return ow.first;
-    final adv = kAdvanceThemes.where((t) => t.id == id).toList();
-    if (adv.isNotEmpty) return adv.first;
+    for (final t in kThemes) {
+      if (t.id == id) return t;
+    }
+    for (final t in kAdvanceThemes) {
+      if (t.id == id) return t;
+    }
+    for (final themes in kExtraSheetThemesMap.values) {
+      for (final t in themes) {
+        if (t.id == id) return t;
+      }
+    }
     if (id.startsWith('my_select_')) {
       final index = int.tryParse(id.replaceFirst('my_select_', '')) ?? 0;
       return ThemeDefinition.mySelect(index, 'My Select ${index + 1}');
@@ -358,10 +366,17 @@ class RankingGalleryScreen extends StatelessWidget {
   });
 
   ThemeDefinition? _getThemeDefinition(String id) {
-    final ow = kThemes.where((t) => t.id == id).toList();
-    if (ow.isNotEmpty) return ow.first;
-    final adv = kAdvanceThemes.where((t) => t.id == id).toList();
-    if (adv.isNotEmpty) return adv.first;
+    for (final t in kThemes) {
+      if (t.id == id) return t;
+    }
+    for (final t in kAdvanceThemes) {
+      if (t.id == id) return t;
+    }
+    for (final themes in kExtraSheetThemesMap.values) {
+      for (final t in themes) {
+        if (t.id == id) return t;
+      }
+    }
     if (id.startsWith('my_select_')) {
       final index = int.tryParse(id.replaceFirst('my_select_', '')) ?? 0;
       return ThemeDefinition.mySelect(index, 'My Select ${index + 1}');

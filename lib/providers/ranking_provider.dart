@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/themes.dart';
 import '../constants/advance_themes.dart';
+import '../constants/extra_sheet_themes.dart';
 import '../models/tile_data.dart';
 import 'tiles_provider.dart';
 import 'my_select_provider.dart';
@@ -19,7 +20,11 @@ final rankingProvider = StateNotifierProvider.family<RankingNotifier, List<Strin
       defaultIds = mySelectThemes.map((t) => t.id).toList();
       break;
     default:
-      defaultIds = kThemes.map((t) => t.id).toList();
+      if (kExtraSheetThemesMap.containsKey(sheetId)) {
+        defaultIds = kExtraSheetThemesMap[sheetId]!.map((t) => t.id).toList();
+      } else {
+        defaultIds = kThemes.map((t) => t.id).toList();
+      }
   }
   final notifier = RankingNotifier(sheetId, defaultIds);
   notifier.loadRanking();

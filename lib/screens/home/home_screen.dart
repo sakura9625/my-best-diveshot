@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../constants/themes.dart';
 import '../../constants/advance_themes.dart';
+import '../../constants/extra_sheet_themes.dart';
 import '../../constants/sheet_definitions.dart';
 import '../../providers/tiles_provider.dart';
 import '../../providers/bingo_provider.dart';
@@ -49,7 +50,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       case 'my_select':
         return mySelectThemeDefs;
       default:
-        return kThemes;
+        return kExtraSheetThemesMap[sheetId] ?? kThemes;
     }
   }
 

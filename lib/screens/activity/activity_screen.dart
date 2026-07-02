@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../constants/themes.dart';
 import '../../constants/advance_themes.dart';
+import '../../constants/extra_sheet_themes.dart';
 import '../../models/tile_data.dart';
 import '../../models/best_photo.dart';
 import '../../providers/tiles_provider.dart';
@@ -461,13 +462,17 @@ class ActivityScreen extends ConsumerWidget {
   }
 
   String _getThemeName(String themeId) {
-    // OWテーマから検索
-    final owTheme = kThemes.where((th) => th.id == themeId).toList();
-    if (owTheme.isNotEmpty) return owTheme.first.name;
-    // Advancedテーマから検索
-    final advTheme = kAdvanceThemes.where((th) => th.id == themeId).toList();
-    if (advTheme.isNotEmpty) return advTheme.first.name;
-    // My Selectテーマ（my_select_Nの形式）
+    for (final t in kThemes) {
+      if (t.id == themeId) return t.name;
+    }
+    for (final t in kAdvanceThemes) {
+      if (t.id == themeId) return t.name;
+    }
+    for (final themes in kExtraSheetThemesMap.values) {
+      for (final t in themes) {
+        if (t.id == themeId) return t.name;
+      }
+    }
     if (themeId.startsWith('my_select_')) {
       final index = int.tryParse(themeId.replaceFirst('my_select_', ''));
       if (index != null) return 'My Select ${index + 1}';
