@@ -5,14 +5,17 @@ import '../../constants/themes.dart';
 import '../../constants/advance_themes.dart';
 import '../../constants/extra_sheet_themes.dart';
 import '../../constants/sheet_definitions.dart';
+import '../../constants/app_config.dart';
 import '../../providers/tiles_provider.dart';
 import '../../providers/bingo_provider.dart';
 import '../../providers/sheet_provider.dart';
 import '../../providers/my_select_provider.dart';
+import '../../providers/purchased_sheets_provider.dart';
 import '../../widgets/bingo_overlay.dart';
 import '../../widgets/resolved_image.dart';
 import '../detail/detail_screen.dart';
 import '../my_select/my_select_settings_screen.dart';
+import '../shop/sheet_shop_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -269,12 +272,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildSheetSelector(BuildContext context, WidgetRef ref) {
     final currentSheetId = ref.watch(currentSheetProvider);
+    final purchased = ref.watch(purchasedSheetsProvider);
+    final purchasedExtraSheets = kExtraSheets
+        .where((s) => AppConfig.isProUser || purchased.contains(s.id))
+        .toList();
 
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       child: Column(
         children: [
-          // My Select説明文（グリッドの直下・シートカードの上）
+          // My Select説明文
           Consumer(
             builder: (context, ref, _) {
               final sheetId = ref.watch(currentSheetProvider);
@@ -289,7 +296,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               );
             },
           ),
-          // 上段：3シート
+          // 上段：デフォルト3シート
           Row(
             children: [
               _buildSheetCard(ref, 'open_water', 'Open Water', currentSheetId),
@@ -300,19 +307,110 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          // 下段：追加スロット
-          Row(
-            children: [
-              _buildLockedSlot(),
-              const SizedBox(width: 8),
-              _buildLockedSlot(),
-              const SizedBox(width: 8),
-              _buildLockedSlot(),
-            ],
+          // 下段：購入済みシート + 追加ボタン（横スクロール）
+          SizedBox(
+            height: 60,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                // 購入済みシート
+                ...purchasedExtraSheets.map((sheet) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: _buildExtraSheetCard(ref, sheet.id, sheet.name, currentSheetId),
+                )),
+                // 追加スロット（ショップへ）
+                ..._buildLockedSlots(context, ref, purchasedExtraSheets.length),
+              ],
+            ),
           ),
           const SizedBox(height: 8),
           const Divider(height: 1, color: Colors.white12),
         ],
+      ),
+    );
+  }
+
+  List<Widget> _buildLockedSlots(BuildContext context, WidgetRef ref, int purchasedCount) {
+    final slots = <Widget>[];
+    // 最低3スロット表示、購入済みが3以上なら+1スロット
+    final slotCount = purchasedCount < 3 ? 3 - purchasedCount : 1;
+    for (int i = 0; i < slotCount; i++) {
+      slots.add(Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: _buildAddSlot(context),
+      ));
+    }
+    return slots;
+  }
+
+  Widget _buildExtraSheetCard(WidgetRef ref, String sheetId, String name, String currentSheetId) {
+    final isSelected = sheetId == currentSheetId;
+    final completedCount = ref.watch(completedCountProvider(sheetId));
+
+    return GestureDetector(
+      onTap: () => ref.read(currentSheetProvider.notifier).state = sheetId,
+      child: Container(
+        width: 90,
+        height: 60,
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF00B4D8).withOpacity(0.15) : const Color(0xFF1A1A2E),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF00B4D8) : Colors.white24,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '$completedCount/25',
+              style: TextStyle(
+                color: isSelected ? const Color(0xFF00B4D8) : Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              name,
+              style: TextStyle(
+                color: isSelected ? const Color(0xFF00B4D8) : Colors.white54,
+                fontSize: 9,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddSlot(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SheetShopScreen()),
+        );
+      },
+      child: Container(
+        width: 90,
+        height: 60,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A2E),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white38),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('+', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+            Text('追加', style: TextStyle(color: Colors.white, fontSize: 10)),
+          ],
+        ),
       ),
     );
   }
@@ -443,25 +541,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildLockedSlot() {
-    return Expanded(
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1A2E).withOpacity(0.5),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white12),
-        ),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('+', style: TextStyle(color: Colors.white24, fontSize: 18)),
-            Text('?', style: TextStyle(color: Colors.white24, fontSize: 11)),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class BingoLinePainter extends CustomPainter {

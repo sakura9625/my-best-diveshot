@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/sheet_definitions.dart';
 import '../constants/app_config.dart';
 import 'bingo_provider.dart';
+import 'purchased_sheets_provider.dart';
 
 final currentSheetProvider = StateProvider<String>((ref) => 'open_water');
 
@@ -16,10 +17,15 @@ final currentSheetDefinitionProvider = Provider<SheetDefinition>((ref) {
 final sheetUnlockedProvider = Provider.family<bool, String>((ref, sheetId) {
   if (sheetId == 'open_water') return true;
 
-  // 追加シート（課金）は課金フラグで管理（将来課金実装時に変更）
+  // 追加シート（課金）の判定
   final isExtraSheet = kExtraSheets.any((s) => s.id == sheetId);
-  if (isExtraSheet) return AppConfig.isProUser;
+  if (isExtraSheet) {
+    if (AppConfig.isProUser) return true;
+    final purchased = ref.watch(purchasedSheetsProvider);
+    return purchased.contains(sheetId);
+  }
 
+  // デフォルトシートのロック判定
   final sheetIndex = kDefaultSheets.indexWhere((s) => s.id == sheetId);
   if (sheetIndex == -1) return false;
 
