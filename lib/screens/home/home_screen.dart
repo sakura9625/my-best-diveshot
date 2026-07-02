@@ -16,6 +16,7 @@ import '../../widgets/resolved_image.dart';
 import '../detail/detail_screen.dart';
 import '../my_select/my_select_settings_screen.dart';
 import '../shop/sheet_shop_screen.dart';
+import '../presentation/presentation_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -30,6 +31,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _showBingo = false;
   List<int> _lastCompletedLines = [];
   bool _mySelectWelcomeShown = false;
+  bool _advanceUnlockShown = false;
 
   void _checkNewBingo(String sheetId) {
     final currentLines = ref.read(completedBingoLinesProvider(sheetId));
@@ -44,6 +46,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _showBingo = true;
       });
     }
+    _checkSheetUnlock(context, ref);
+  }
+
+  void _checkSheetUnlock(BuildContext context, WidgetRef ref) {
+    if (_advanceUnlockShown) return;
+    final advanceUnlocked = ref.read(sheetUnlockedProvider('advance'));
+    if (advanceUnlocked) {
+      _advanceUnlockShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showAdvanceUnlockDialog(context);
+      });
+    }
+  }
+
+  void _showAdvanceUnlockDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('🎉 解放！', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'おめでとうございます！\nAdvancedが解放されました！\n\nより難しいテーマに挑戦しましょう。',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: Color(0xFF00B4D8))),
+          ),
+        ],
+      ),
+    );
   }
 
   List<ThemeDefinition> _getThemes(String sheetId, List<ThemeDefinition> mySelectThemeDefs) {
@@ -98,7 +132,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.slideshow, color: Colors.white),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PresentationScreen(
+                    sheetId: currentSheetId,
+                    themes: themes,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),

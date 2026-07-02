@@ -361,6 +361,7 @@ class ActivityScreen extends ConsumerWidget {
     final widgets = <Widget>[];
     final now = DateTime.now();
 
+    // 激戦テーマ
     final hotThemes = <String, int>{};
     for (final t in tiles.values) {
       int count = 0;
@@ -372,49 +373,60 @@ class ActivityScreen extends ConsumerWidget {
       if (count >= 5) hotThemes[t.themeId] = count;
     }
     if (hotThemes.isNotEmpty) {
-      final sorted = hotThemes.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-      final themeName = _getThemeName(sorted.first.key);
-      widgets.add(_buildInfoCard('🔥 激戦テーマ', themeName, '直近90日で ${sorted.first.value} 回交代'));
+      final maxCount = hotThemes.values.reduce((a, b) => a > b ? a : b);
+      final hotNames = hotThemes.entries
+          .where((e) => e.value == maxCount)
+          .map((e) => _getThemeName(e.key))
+          .toList();
+      widgets.add(_buildInfoCard('🔥 激戦テーマ', hotNames.join('、'), '直近90日で $maxCount 回交代'));
     } else {
       widgets.add(_buildEmptyCard('🔥 激戦テーマ', '直近90日で5回以上交代したテーマはありません'));
     }
 
-    String? restoreTheme;
+    // 王者奪還
     int maxRestore = 0;
     for (final t in tiles.values) {
       final count = t.history.where((h) => h.isRestored).length +
           (t.currentBest?.isRestored == true ? 1 : 0);
-      if (count > maxRestore) {
-        maxRestore = count;
-        restoreTheme = t.themeId;
-      }
+      if (count > maxRestore) maxRestore = count;
     }
-    if (restoreTheme != null && maxRestore > 0) {
-      final themeName = _getThemeName(restoreTheme);
-      widgets.add(_buildInfoCard('⚔️ 王者奪還', themeName, '$maxRestore 回復活'));
+    if (maxRestore > 0) {
+      final restoreThemes = tiles.values.where((t) {
+        final count = t.history.where((h) => h.isRestored).length +
+            (t.currentBest?.isRestored == true ? 1 : 0);
+        return count == maxRestore;
+      }).map((t) => _getThemeName(t.themeId)).toList();
+      widgets.add(_buildInfoCard('⚔️ 王者奪還', restoreThemes.join('、'), '$maxRestore 回復活'));
     } else {
       widgets.add(_buildEmptyCard('⚔️ 王者奪還', 'まだ復活した王者はいません'));
     }
 
-    String? mostChanged;
-    int maxChanges = 0;
-    for (final t in tiles.values) {
-      if (t.history.length > maxChanges) {
-        maxChanges = t.history.length;
-        mostChanged = t.themeId;
+    // 交代が多いテーマ
+    if (tiles.isNotEmpty) {
+      int maxChanges = 0;
+      for (final t in tiles.values) {
+        if (t.history.length > maxChanges) maxChanges = t.history.length;
+      }
+      if (maxChanges > 0) {
+        final mostChanged = tiles.values
+            .where((t) => t.history.length == maxChanges)
+            .map((t) => _getThemeName(t.themeId))
+            .toList();
+        widgets.add(_buildInfoCard(
+          '🔄 交代が多いテーマ',
+          mostChanged.join('、'),
+          '$maxChanges 回交代',
+        ));
+      } else {
+        widgets.add(_buildEmptyCard('🔄 交代が多いテーマ', 'まだ交代記録がありません'));
       }
     }
-    if (mostChanged != null && maxChanges > 0) {
-      final themeName = _getThemeName(mostChanged);
-      widgets.add(_buildInfoCard('🔄 交代が多いテーマ', themeName, '$maxChanges 回交代'));
-    } else {
-      widgets.add(_buildEmptyCard('🔄 交代が多いテーマ', 'まだ交代記録がありません'));
-    }
 
+    // 交代が少ないテーマ
     final stableThemes = tiles.values.where((t) => t.isKing && t.history.isEmpty).toList();
     if (stableThemes.isNotEmpty) {
-      final themeName = _getThemeName(stableThemes.first.themeId);
-      widgets.add(_buildInfoCard('🏰 交代が少ないテーマ', themeName, '一度も交代なし'));
+      final names = stableThemes.map((t) => _getThemeName(t.themeId)).toList();
+      widgets.add(_buildInfoCard('🏰 交代が少ないテーマ', names.join('、'), '一度も交代なし'));
     } else {
       widgets.add(_buildEmptyCard('🏰 交代が少ないテーマ', 'まだ記録がありません'));
     }
