@@ -5,7 +5,6 @@ import '../../constants/sheet_definitions.dart';
 import '../../constants/app_config.dart';
 import '../../providers/purchased_sheets_provider.dart';
 import '../../providers/purchase_provider.dart';
-import '../../providers/sheet_provider.dart';
 
 class SheetShopScreen extends ConsumerWidget {
   const SheetShopScreen({super.key});
