@@ -413,13 +413,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                           _buildHistoryItem(entry.value, entry.key, theme.id)),
                       const SizedBox(height: 12),
                       OutlinedButton(
-                        onPressed: () {
-                          if (!AppConfig.isProUser) {
-                            _showProFeatureDialog();
-                            return;
-                          }
-                          _showCompareCarousel(tile);
-                        },
+                        onPressed: () => _showCompareCarousel(tile),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Colors.white24),
                           minimumSize: const Size(double.infinity, 36),
@@ -491,13 +485,11 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                           const SizedBox(height: 12),
                           OutlinedButton(
                             onPressed: () {
-                              if (!AppConfig.isProUser) {
-                                Navigator.pop(context);
-                                _showProFeatureDialog();
-                                return;
-                              }
                               final historyIndex = tile.history.length - index;
-                              ref.read(tilesProvider(widget.sheetId).notifier).restoreFromHistory(_currentTheme.id, historyIndex);
+                              ref.read(tilesProvider(widget.sheetId).notifier).restoreFromHistory(
+                                _currentTheme.id,
+                                historyIndex,
+                              );
                               Navigator.pop(context);
                             },
                             style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFF00B4D8))),
@@ -710,28 +702,21 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
       decoration: BoxDecoration(color: const Color(0xFF1A1A2E), borderRadius: BorderRadius.circular(8)),
       child: Row(
         children: [
-          AppConfig.isProUser
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: ResolvedImage(
-                    fileName: photo.fileName,
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.cover,
-                    errorWidget: Container(
-                      width: 48,
-                      height: 48,
-                      color: Colors.white12,
-                      child: const Icon(Icons.image_not_supported, color: Colors.white24, size: 20),
-                    ),
-                  ),
-                )
-              : Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(4)),
-                  child: const Icon(Icons.lock, color: Colors.white24, size: 20),
-                ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: ResolvedImage(
+              fileName: photo.fileName,
+              width: 48,
+              height: 48,
+              fit: BoxFit.cover,
+              errorWidget: Container(
+                width: 48,
+                height: 48,
+                color: Colors.white12,
+                child: const Icon(Icons.image_not_supported, color: Colors.white24, size: 20),
+              ),
+            ),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -741,10 +726,6 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
           ),
           TextButton(
             onPressed: () {
-              if (!AppConfig.isProUser) {
-                _showProFeatureDialog();
-                return;
-              }
               ref.read(tilesProvider(widget.sheetId).notifier).restoreFromHistory(themeId, index);
             },
             child: const Text('復活', style: TextStyle(color: Color(0xFF00B4D8), fontSize: 12)),
