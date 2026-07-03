@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../constants/themes.dart';
-import '../../constants/app_config.dart';
 import '../../models/tile_data.dart';
 import '../../models/best_photo.dart';
 import '../../providers/tiles_provider.dart';
@@ -193,27 +192,6 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
   String _formatMonth(DateTime? date) {
     if (date == null) return '未入力';
     return DateFormat('yyyy年M月').format(date);
-  }
-
-  void _showProFeatureDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Pro機能', style: TextStyle(color: Colors.white)),
-        content: const Text('この機能はProプランで使えます。', style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('閉じる', style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('アップグレード', style: TextStyle(color: Color(0xFF00B4D8))),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
