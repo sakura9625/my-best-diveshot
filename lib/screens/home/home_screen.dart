@@ -150,6 +150,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             },
           ),
           IconButton(
+            icon: const Text('💎', style: TextStyle(fontSize: 20)),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SheetShopScreen()),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.slideshow, color: Colors.white),
             onPressed: () {
               Navigator.push(

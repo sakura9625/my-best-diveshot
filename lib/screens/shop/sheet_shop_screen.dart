@@ -21,7 +21,7 @@ class SheetShopScreen extends ConsumerWidget {
         backgroundColor: const Color(0xFF0A0A1A),
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
-          'ビンゴシートを追加',
+          'ショップ',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -38,61 +38,99 @@ class SheetShopScreen extends ConsumerWidget {
             error: (e, _) => const Center(
               child: Text('商品情報の取得に失敗しました', style: TextStyle(color: Colors.white54)),
             ),
-            data: (products) => ListView.builder(
+            data: (products) => ListView(
               padding: const EdgeInsets.all(16),
-              itemCount: kExtraSheets.length,
-              itemBuilder: (context, index) {
-                final sheet = kExtraSheets[index];
-                final isPurchased = AppConfig.isProUser || purchased.contains(sheet.id);
-                final productId = 'com.hikaru.mybestdiveshot.sheet.${sheet.id}';
-                final product = products.where((p) => p.id == productId).firstOrNull;
+              children: [
+                // DiveCloudセクション
+                _buildSectionHeader('☁️ DiveCloud'),
+                const SizedBox(height: 4),
+                const Text(
+                  '写真をクラウドに保存し、機種変更や複数端末での同期ができます',
+                  style: TextStyle(color: Colors.white38, fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                _buildCloudProduct(
+                  context,
+                  ref,
+                  products,
+                  'com.hikaru.mybestdiveshot.cloud.monthly',
+                  'DiveCloud Monthly',
+                  '月額プラン',
+                  '',
+                ),
+                const SizedBox(height: 8),
+                _buildCloudProduct(
+                  context,
+                  ref,
+                  products,
+                  'com.hikaru.mybestdiveshot.cloud.yearly',
+                  'DiveCloud Yearly',
+                  '年額プラン',
+                  '6ヶ月分お得',
+                ),
+                const SizedBox(height: 24),
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A2E),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isPurchased ? const Color(0xFF00B4D8) : Colors.white12,
+                // ビンゴシートセクション
+                _buildSectionHeader('🎯 ビンゴシートを追加'),
+                const SizedBox(height: 4),
+                const Text(
+                  '新しいビンゴシートを追加して挑戦の幅を広げましょう',
+                  style: TextStyle(color: Colors.white38, fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                ...kExtraSheets.map((sheet) {
+                  final isPurchased = AppConfig.isProUser || purchased.contains(sheet.id);
+                  final productId = 'com.hikaru.mybestdiveshot.sheet.${sheet.id}';
+                  final product = products.where((p) => p.id == productId).firstOrNull;
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A2E),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isPurchased ? const Color(0xFF00B4D8) : Colors.white12,
+                      ),
                     ),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    title: Text(
-                      sheet.name,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: const Text(
-                      '25テーマ',
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
-                    ),
-                    trailing: isPurchased
-                        ? const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.check_circle, color: Color(0xFF00B4D8), size: 20),
-                              SizedBox(width: 6),
-                              Text('追加済み', style: TextStyle(color: Color(0xFF00B4D8), fontSize: 12)),
-                            ],
-                          )
-                        : ElevatedButton(
-                            onPressed: product == null
-                                ? null
-                                : () => _showPurchaseDialog(context, ref, sheet, product),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00B4D8),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              minimumSize: Size.zero,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      title: Text(
+                        sheet.name,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: const Text(
+                        '25テーマ',
+                        style: TextStyle(color: Colors.white38, fontSize: 12),
+                      ),
+                      trailing: isPurchased
+                          ? const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.check_circle, color: Color(0xFF00B4D8), size: 20),
+                                SizedBox(width: 6),
+                                Text('追加済み', style: TextStyle(color: Color(0xFF00B4D8), fontSize: 12)),
+                              ],
+                            )
+                          : ElevatedButton(
+                              onPressed: product == null
+                                  ? null
+                                  : () => _showSheetPurchaseDialog(context, ref, sheet, product),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00B4D8),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                minimumSize: Size.zero,
+                              ),
+                              child: Text(
+                                product?.price ?? '¥300',
+                                style: const TextStyle(fontSize: 12),
+                              ),
                             ),
-                            child: Text(
-                              product?.price ?? '¥300',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ),
-                  ),
-                );
-              },
+                    ),
+                  );
+                }),
+                const SizedBox(height: 32),
+              ],
             ),
           ),
           if (purchaseNotifier.isLoading)
@@ -105,7 +143,135 @@ class SheetShopScreen extends ConsumerWidget {
     );
   }
 
-  void _showPurchaseDialog(
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  Widget _buildCloudProduct(
+    BuildContext context,
+    WidgetRef ref,
+    List<ProductDetails> products,
+    String productId,
+    String name,
+    String label,
+    String badge,
+  ) {
+    final product = products.where((p) => p.id == productId).firstOrNull;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF00B4D8).withOpacity(0.3)),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        title: Row(
+          children: [
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            if (badge.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  badge,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        subtitle: Text(
+          product?.price ?? '',
+          style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 14),
+        ),
+        trailing: ElevatedButton(
+          onPressed: product == null
+              ? null
+              : () => _showCloudPurchaseDialog(context, ref, label, product),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF00B4D8),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            minimumSize: Size.zero,
+          ),
+          child: const Text('購入', style: TextStyle(fontSize: 12)),
+        ),
+      ),
+    );
+  }
+
+  void _showCloudPurchaseDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String label,
+    ProductDetails product,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: Text('DiveCloud $label', style: const TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '写真をクラウドに保存し、機種変更や複数端末での同期ができます。',
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              product.price,
+              style: const TextStyle(
+                color: Color(0xFFFFD700),
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'いつでもキャンセルできます',
+              style: TextStyle(color: Colors.white38, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ref.read(purchaseNotifierProvider).buyProduct(product);
+            },
+            child: const Text('購入する', style: TextStyle(color: Color(0xFF00B4D8))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSheetPurchaseDialog(
     BuildContext context,
     WidgetRef ref,
     SheetDefinition sheet,
