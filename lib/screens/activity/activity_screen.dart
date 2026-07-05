@@ -98,7 +98,7 @@ class ActivityScreen extends ConsumerWidget {
 
                 _buildSectionTitle('🎯 ビンゴ'),
                 const SizedBox(height: 8),
-                _buildBingoSection(bingoLines, isComplete, tiles),
+                _buildBingoSection(bingoLines, isComplete, tiles, sheetId),
                 const SizedBox(height: 24),
 
                 _buildSectionTitle('👑 王者ストーリー'),
@@ -174,7 +174,7 @@ class ActivityScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBingoSection(List<int> bingoLines, bool isComplete, Map<String, TileData> tiles) {
+  Widget _buildBingoSection(List<int> bingoLines, bool isComplete, Map<String, TileData> tiles, String sheetId) {
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -193,6 +193,7 @@ class ActivityScreen extends ConsumerWidget {
                   painter: _BingoGridPainter(
                     bingoLines: bingoLines,
                     tiles: tiles,
+                    sheetId: sheetId,
                   ),
                 ),
               ),
@@ -597,8 +598,13 @@ class ActivityScreen extends ConsumerWidget {
 class _BingoGridPainter extends CustomPainter {
   final List<int> bingoLines;
   final Map<String, TileData> tiles;
+  final String sheetId;
 
-  _BingoGridPainter({required this.bingoLines, required this.tiles});
+  _BingoGridPainter({
+    required this.bingoLines,
+    required this.tiles,
+    required this.sheetId,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -610,12 +616,14 @@ class _BingoGridPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
 
+    final themes = _getThemesForSheet(sheetId);
+
     final kingPaint = Paint()
       ..color = const Color(0xFF00B4D8).withOpacity(0.35)
       ..style = PaintingStyle.fill;
 
-    for (int i = 0; i < kThemes.length; i++) {
-      final tile = tiles[kThemes[i].id];
+    for (int i = 0; i < themes.length; i++) {
+      final tile = tiles[themes[i].id];
       if (tile?.isKing == true) {
         final col = i % 5;
         final row = i ~/ 5;
@@ -654,7 +662,18 @@ class _BingoGridPainter extends CustomPainter {
     }
   }
 
+  List<ThemeDefinition> _getThemesForSheet(String sheetId) {
+    switch (sheetId) {
+      case 'advance':
+        return kAdvanceThemes;
+      default:
+        return kExtraSheetThemesMap[sheetId] ?? kThemes;
+    }
+  }
+
   @override
   bool shouldRepaint(_BingoGridPainter oldDelegate) =>
-      oldDelegate.bingoLines != bingoLines || oldDelegate.tiles != tiles;
+      oldDelegate.bingoLines != bingoLines ||
+      oldDelegate.tiles != tiles ||
+      oldDelegate.sheetId != sheetId;
 }

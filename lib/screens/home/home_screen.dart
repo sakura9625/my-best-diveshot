@@ -31,32 +31,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _showBingo = false;
   List<int> _lastCompletedLines = [];
   bool _mySelectWelcomeShown = false;
-  bool _advanceUnlockShown = false;
+  Set<int> _celebratedLines = {};
 
-  void _checkNewBingo(String sheetId) {
+  @override
+  void initState() {
+    super.initState();
+    _loadCelebratedLines();
+  }
+
+  Future<void> _loadCelebratedLines() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lines = prefs.getStringList('celebrated_bingo_lines_${ref.read(currentSheetProvider)}') ?? [];
+    setState(() {
+      _celebratedLines = lines.map((e) => int.parse(e)).toSet();
+    });
+  }
+
+  Future<void> _saveCelebratedLines(String sheetId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      'celebrated_bingo_lines_$sheetId',
+      _celebratedLines.map((e) => e.toString()).toList(),
+    );
+  }
+
+  Future<void> _checkNewBingo(String sheetId) async {
     final currentLines = ref.read(completedBingoLinesProvider(sheetId));
-    final notifier = ref.read(tilesProvider(sheetId).notifier);
-    final newLines = notifier.getNewlyCompletedLines(currentLines);
+    final newLines = currentLines
+        .where((line) => !_celebratedLines.contains(line))
+        .toList();
     setState(() {
       _lastCompletedLines = currentLines;
     });
     if (newLines.isNotEmpty) {
+      _celebratedLines.addAll(newLines);
+      _saveCelebratedLines(sheetId);
       setState(() {
         _newBingoLines = newLines;
         _showBingo = true;
       });
     }
-    _checkSheetUnlock(context, ref);
+    await _checkSheetUnlock(context, ref);
   }
 
-  void _checkSheetUnlock(BuildContext context, WidgetRef ref) {
-    if (_advanceUnlockShown) return;
+  Future<void> _checkSheetUnlock(BuildContext context, WidgetRef ref) async {
+    final prefs = await SharedPreferences.getInstance();
     final advanceUnlocked = ref.read(sheetUnlockedProvider('advance'));
-    if (advanceUnlocked) {
-      _advanceUnlockShown = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _showAdvanceUnlockDialog(context);
-      });
+    final shown = prefs.getBool('advance_unlock_shown') ?? false;
+    if (advanceUnlocked && !shown) {
+      await prefs.setBool('advance_unlock_shown', true);
+      if (mounted) _showAdvanceUnlockDialog(context);
     }
   }
 
@@ -198,7 +222,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                               ),
                             );
-                            _checkNewBingo(currentSheetId);
+                            await _checkNewBingo(currentSheetId);
                           },
                           child: Container(
                             decoration: BoxDecoration(

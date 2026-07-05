@@ -3,7 +3,6 @@ class BestPhoto {
   final String subjectName;
   final String title;
   final String location;
-  final DateTime? divingMonth;
   final DateTime? shotDate;
   final DateTime? crownedAt;
   final int crownCount;
@@ -16,7 +15,6 @@ class BestPhoto {
     required this.subjectName,
     required this.title,
     required this.location,
-    this.divingMonth,
     this.shotDate,
     this.crownedAt,
     this.crownCount = 0,
@@ -30,7 +28,6 @@ class BestPhoto {
     'subjectName': subjectName,
     'title': title,
     'location': location,
-    'divingMonth': divingMonth?.toIso8601String(),
     'shotDate': shotDate?.toIso8601String(),
     'crownedAt': crownedAt?.toIso8601String(),
     'crownCount': crownCount,
@@ -44,7 +41,6 @@ class BestPhoto {
     subjectName: data['subjectName'] ?? '',
     title: data['title'] ?? '',
     location: data['location'] ?? '',
-    divingMonth: data['divingMonth'] != null ? DateTime.parse(data['divingMonth']) : null,
     shotDate: data['shotDate'] != null ? DateTime.parse(data['shotDate']) : null,
     crownedAt: data['crownedAt'] != null ? DateTime.parse(data['crownedAt']) : null,
     crownCount: data['crownCount'] ?? 0,
@@ -67,7 +63,6 @@ class BestPhoto {
     String? subjectName,
     String? title,
     String? location,
-    DateTime? divingMonth,
     DateTime? shotDate,
     DateTime? crownedAt,
     int? crownCount,
@@ -79,7 +74,6 @@ class BestPhoto {
     subjectName: subjectName ?? this.subjectName,
     title: title ?? this.title,
     location: location ?? this.location,
-    divingMonth: divingMonth ?? this.divingMonth,
     shotDate: shotDate ?? this.shotDate,
     crownedAt: crownedAt ?? this.crownedAt,
     crownCount: crownCount ?? this.crownCount,

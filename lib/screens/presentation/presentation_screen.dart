@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../constants/themes.dart';
 import '../../constants/advance_themes.dart';
 import '../../constants/extra_sheet_themes.dart';
@@ -192,14 +191,10 @@ class _PresentationScreenState extends ConsumerState<PresentationScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  if (photo.location.isNotEmpty || photo.divingMonth != null) ...[
+                  if (photo.location.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
-                      [
-                        if (photo.location.isNotEmpty) photo.location,
-                        if (photo.divingMonth != null)
-                          DateFormat('yyyy年M月').format(photo.divingMonth!),
-                      ].join('　'),
+                      photo.location,
                       style: const TextStyle(color: Colors.white60, fontSize: 13),
                     ),
                   ],

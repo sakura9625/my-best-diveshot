@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../constants/themes.dart';
 import '../../models/tile_data.dart';
 import '../../models/best_photo.dart';
@@ -32,7 +31,6 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
   late TextEditingController _titleController;
   late TextEditingController _locationController;
   late TextEditingController _commentController;
-  DateTime? _selectedMonth;
 
   @override
   void initState() {
@@ -59,7 +57,6 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
     _titleController.text = photo.title;
     _locationController.text = photo.location;
     _commentController.text = photo.comment;
-    _selectedMonth = photo.divingMonth;
   }
 
   Future<void> _showImageSourcePicker(String themeId, {bool isProvisional = false}) async {
@@ -90,88 +87,31 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
     await ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(themeId);
   }
 
-  Future<void> _pickMonth(BuildContext context) async {
-    int selectedYear = _selectedMonth?.year ?? DateTime.now().year;
-    int selectedMonth = _selectedMonth?.month ?? DateTime.now().month;
-
-    await showDialog(
+  Future<void> _showUpdateKingConfirmDialog(String themeId) async {
+    final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('撮影月を選択', style: TextStyle(color: Colors.white)),
-        content: SizedBox(
-          height: 200,
-          child: StatefulBuilder(
-            builder: (context, setDialogState) => Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.chevron_left, color: Colors.white),
-                      onPressed: () => setDialogState(() => selectedYear--),
-                    ),
-                    Text('$selectedYear年', style: const TextStyle(color: Colors.white, fontSize: 18)),
-                    IconButton(
-                      icon: const Icon(Icons.chevron_right, color: Colors.white),
-                      onPressed: () {
-                        if (selectedYear < DateTime.now().year) {
-                          setDialogState(() => selectedYear++);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                Expanded(
-                  child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      childAspectRatio: 1.5,
-                    ),
-                    itemCount: 12,
-                    itemBuilder: (context, index) {
-                      final month = index + 1;
-                      final isSelected = month == selectedMonth;
-                      return GestureDetector(
-                        onTap: () => setDialogState(() => selectedMonth = month),
-                        child: Container(
-                          margin: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFF00B4D8) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '$month月',
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white60,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
+        title: const Text('王者を更新する', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'この写真を新たな王者にしてよろしいですか？',
+          style: TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
           ),
           TextButton(
-            onPressed: () {
-              setState(() => _selectedMonth = DateTime(selectedYear, selectedMonth));
-              Navigator.pop(context);
-            },
-            child: const Text('決定', style: TextStyle(color: Color(0xFF00B4D8))),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('更新する', style: TextStyle(color: Color(0xFF00B4D8))),
           ),
         ],
       ),
     );
+    if (confirm == true) {
+      await ref.read(tilesProvider(widget.sheetId).notifier).updateKing(themeId);
+    }
   }
 
   Future<void> _saveEdits(TileData tile) async {
@@ -181,17 +121,11 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
       subjectName: '',
       title: _titleController.text,
       location: _locationController.text,
-      divingMonth: _selectedMonth,
       comment: _commentController.text,
       registeredAt: current.registeredAt,
     );
     await ref.read(tilesProvider(widget.sheetId).notifier).updatePhotoMeta(_currentTheme.id, updated);
     setState(() => _isEditing = false);
-  }
-
-  String _formatMonth(DateTime? date) {
-    if (date == null) return '未入力';
-    return DateFormat('yyyy年M月').format(date);
   }
 
   @override
@@ -269,9 +203,9 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                   ),
                 ),
               GestureDetector(
-                onTap: () {
+                onTap: () async {
                   if (tile?.isKing == true) {
-                    ref.read(tilesProvider(widget.sheetId).notifier).updateKing(theme.id);
+                    await _showUpdateKingConfirmDialog(theme.id);
                   } else {
                     final isProvisional = tile?.isProvisional == true;
                     _showImageSourcePicker(theme.id, isProvisional: isProvisional);
@@ -300,9 +234,13 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    final isProvisional = tile?.isProvisional == true;
-                    _showImageSourcePicker(theme.id, isProvisional: isProvisional);
+                  onPressed: () async {
+                    if (tile?.isKing == true) {
+                      await _showUpdateKingConfirmDialog(theme.id);
+                    } else {
+                      final isProvisional = tile?.isProvisional == true;
+                      _showImageSourcePicker(theme.id, isProvisional: isProvisional);
+                    }
                   },
                   icon: const Icon(Icons.swap_horiz, color: Color(0xFF00B4D8), size: 18),
                   label: Text(
@@ -360,8 +298,6 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                       enabled: hasPhoto,
                       hint: '例：石垣島 竜串',
                     ),
-                    const SizedBox(height: 20),
-                    _buildMonthField(context, photo, hasPhoto),
                     const SizedBox(height: 20),
                     _buildUnderlineField(
                       label: '思い出コメント',
@@ -455,10 +391,11 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                         ),
                         if (p.title.isNotEmpty)
                           Text(p.title, style: const TextStyle(color: Colors.white, fontSize: 15)),
-                        Text(
-                          [if (p.location.isNotEmpty) p.location, _formatMonth(p.divingMonth)].join(' / '),
-                          style: const TextStyle(color: Colors.white54, fontSize: 13),
-                        ),
+                        if (p.location.isNotEmpty)
+                          Text(
+                            p.location,
+                            style: const TextStyle(color: Colors.white54, fontSize: 13),
+                          ),
                         if (!isCurrentKing) ...[
                           const SizedBox(height: 12),
                           OutlinedButton(
@@ -520,48 +457,6 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                   Text(
                     enabled ? (value.isEmpty ? hint : value) : hint,
                     style: TextStyle(color: (!enabled || value.isEmpty) ? Colors.white24 : Colors.white, fontSize: 15),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(height: 1, color: Colors.white12),
-                ],
-              ),
-      ],
-    );
-  }
-
-  Widget _buildMonthField(BuildContext context, BestPhoto? photo, bool enabled) {
-    final displayText = _isEditing ? _formatMonth(_selectedMonth) : _formatMonth(photo?.divingMonth);
-    final isEmpty = photo?.divingMonth == null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('撮影月', style: TextStyle(color: enabled ? Colors.white54 : Colors.white24, fontSize: 12)),
-        const SizedBox(height: 4),
-        _isEditing
-            ? GestureDetector(
-                onTap: () => _pickMonth(context),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(displayText, style: const TextStyle(color: Colors.white, fontSize: 15)),
-                        const Spacer(),
-                        const Icon(Icons.calendar_today, color: Colors.white38, size: 16),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Container(height: 1, color: const Color(0xFF00B4D8)),
-                  ],
-                ),
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    enabled ? displayText : '写真登録後に入力できます',
-                    style: TextStyle(color: (!enabled || isEmpty) ? Colors.white24 : Colors.white, fontSize: 15),
                   ),
                   const SizedBox(height: 4),
                   Container(height: 1, color: Colors.white12),
@@ -645,6 +540,11 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
             _buildHistoryRow('撮影日', _formatDate(photo.shotDate)),
           if (isKing && photo.crownedAt != null)
             _buildHistoryRow('即位日', _formatDate(photo.crownedAt)),
+          if (photo.shotDate == null && (!isKing || photo.crownedAt == null))
+            const Text(
+              '編集から情報を追加できます',
+              style: TextStyle(color: Colors.white24, fontSize: 11),
+            ),
         ],
       ),
     );
@@ -671,7 +571,6 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
     final parts = [
       if (photo.title.isNotEmpty) photo.title,
       if (photo.location.isNotEmpty) photo.location,
-      if (photo.divingMonth != null) _formatMonth(photo.divingMonth),
     ];
 
     return Container(
