@@ -30,7 +30,13 @@ class PurchaseNotifier extends ChangeNotifier {
       if (sheetId != null) {
         await _ref.read(purchasedSheetsProvider.notifier).purchase(sheetId);
       }
-      // クラウドオプションの購入処理（将来実装）
+      // DiveCloudの購入処理
+      if (productId == 'com.hikaru.mybestdiveshot.cloud.monthly') {
+        await _ref.read(diveCloudProvider.notifier).activate('monthly');
+      } else if (productId == 'com.hikaru.mybestdiveshot.cloud.yearly') {
+        await _ref.read(diveCloudProvider.notifier).activate('yearly');
+      }
+
       isLoading = false;
       notifyListeners();
     };

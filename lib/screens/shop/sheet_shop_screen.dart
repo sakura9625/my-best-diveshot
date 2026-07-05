@@ -14,6 +14,7 @@ class SheetShopScreen extends ConsumerWidget {
     final purchased = ref.watch(purchasedSheetsProvider);
     final productsAsync = ref.watch(productsProvider);
     final purchaseNotifier = ref.watch(purchaseNotifierProvider);
+    final diveCloud = ref.watch(diveCloudProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A1A),
@@ -50,23 +51,17 @@ class SheetShopScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 _buildCloudProduct(
-                  context,
-                  ref,
-                  products,
+                  context, ref, products,
                   'com.hikaru.mybestdiveshot.cloud.monthly',
-                  'DiveCloud Monthly',
-                  '月額プラン',
-                  '',
+                  'DiveCloud Monthly', '月額プラン', '',
+                  diveCloud.isActive && diveCloud.planType == 'monthly',
                 ),
                 const SizedBox(height: 8),
                 _buildCloudProduct(
-                  context,
-                  ref,
-                  products,
+                  context, ref, products,
                   'com.hikaru.mybestdiveshot.cloud.yearly',
-                  'DiveCloud Yearly',
-                  '年額プラン',
-                  '6ヶ月分お得',
+                  'DiveCloud Yearly', '年額プラン', '6ヶ月分お得',
+                  diveCloud.isActive && diveCloud.planType == 'yearly',
                 ),
                 const SizedBox(height: 24),
 
@@ -162,6 +157,7 @@ class SheetShopScreen extends ConsumerWidget {
     String name,
     String label,
     String badge,
+    bool isActive,
   ) {
     final product = products.where((p) => p.id == productId).firstOrNull;
 
@@ -169,7 +165,11 @@ class SheetShopScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A2E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF00B4D8).withOpacity(0.3)),
+        border: Border.all(
+          color: isActive
+              ? const Color(0xFF00B4D8)
+              : const Color(0xFF00B4D8).withOpacity(0.3),
+        ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -203,18 +203,27 @@ class SheetShopScreen extends ConsumerWidget {
           product?.price ?? '',
           style: const TextStyle(color: Color(0xFF00B4D8), fontSize: 14),
         ),
-        trailing: ElevatedButton(
-          onPressed: product == null
-              ? null
-              : () => _showCloudPurchaseDialog(context, ref, label, product),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF00B4D8),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            minimumSize: Size.zero,
-          ),
-          child: const Text('購入', style: TextStyle(fontSize: 12)),
-        ),
+        trailing: isActive
+            ? const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: Color(0xFF00B4D8), size: 20),
+                  SizedBox(width: 6),
+                  Text('利用中', style: TextStyle(color: Color(0xFF00B4D8), fontSize: 12)),
+                ],
+              )
+            : ElevatedButton(
+                onPressed: product == null
+                    ? null
+                    : () => _showCloudPurchaseDialog(context, ref, label, product),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00B4D8),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  minimumSize: Size.zero,
+                ),
+                child: const Text('購入', style: TextStyle(fontSize: 12)),
+              ),
       ),
     );
   }
