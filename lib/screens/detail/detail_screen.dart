@@ -84,49 +84,70 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
       );
       if (confirm != true) return;
       await ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(themeId);
-    } else {
-      // 王者がいる場合：写真選択後にダイアログ
-      final tiles = ref.read(tilesProvider(widget.sheetId));
-      final isKing = tiles[themeId]?.isKing == true;
+      return;
+    }
 
-      await ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(themeId);
+    // 王者がいる場合：updateKingを使って旧王者を歴代に移動してから仮登録
+    final tiles = ref.read(tilesProvider(widget.sheetId));
+    final isKing = tiles[themeId]?.isKing == true;
 
-      // 写真選択後のtile状態を確認
+    if (isKing) {
+      await ref.read(tilesProvider(widget.sheetId).notifier).updateKing(themeId);
+
+      // 写真選択後（キャンセルされた場合はprovisionalにならない）
+      if (!mounted) return;
       final newTiles = ref.read(tilesProvider(widget.sheetId));
       final newTile = newTiles[themeId];
       if (newTile == null || !newTile.isProvisional) return;
 
-      if (isKing) {
-        // 王者がいた場合は自動でダイアログを表示
-        if (!mounted) return;
-        final confirm = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF1A1A2E),
-            title: const Text('王者に認定する', style: TextStyle(color: Colors.white)),
-            content: const Text(
-              'この写真を新たな王者にしてよろしいですか？',
-              style: TextStyle(color: Colors.white70),
+      // ボトムシートで確認
+      final confirm = await showModalBottomSheet<bool>(
+        context: context,
+        backgroundColor: const Color(0xFF1A1A2E),
+        builder: (context) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'この写真を新たな王者にしてよろしいですか？',
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFD700),
+                    foregroundColor: Colors.black,
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                  child: const Text('👑 認定する', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.white38),
+                    minimumSize: const Size(double.infinity, 44),
+                  ),
+                  child: const Text('キャンセル', style: TextStyle(color: Colors.white)),
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('認定する', style: TextStyle(color: Color(0xFF00B4D8))),
-              ),
-            ],
           ),
-        );
-        if (confirm == true) {
-          await ref.read(tilesProvider(widget.sheetId).notifier).crownAsKing(themeId);
-        } else {
-          // キャンセル：仮登録を削除して元の王者に戻す
-          await ref.read(tilesProvider(widget.sheetId).notifier).cancelProvisional(themeId);
-        }
+        ),
+      );
+
+      if (confirm == true) {
+        await ref.read(tilesProvider(widget.sheetId).notifier).crownAsKing(themeId);
+      } else {
+        await ref.read(tilesProvider(widget.sheetId).notifier).cancelProvisional(themeId);
       }
+    } else {
+      // 未登録の場合：そのまま写真選択
+      await ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(themeId);
     }
   }
 
