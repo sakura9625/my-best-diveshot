@@ -128,6 +128,40 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     });
   }
 
+  // 仮登録をキャンセルして前の王者に戻す
+  Future<void> cancelProvisional(String themeId) async {
+    final existing = state[themeId];
+    if (existing == null || !existing.isProvisional) return;
+
+    // 歴代王者の最新（直前の王者）を現在の王者に戻す
+    if (existing.history.isNotEmpty) {
+      final previousKing = existing.history.last;
+      final newHistory = existing.history.sublist(0, existing.history.length - 1);
+      final newTile = TileData(
+        themeId: themeId,
+        currentBest: previousKing,
+        status: TileStatus.king,
+        history: newHistory,
+      );
+      state = {...state, themeId: newTile};
+      FirestoreService.saveTile(sheetId, themeId, newTile).catchError((e) {
+        debugPrint('Firestore save error: $e');
+      });
+    } else {
+      // 歴代がない場合は空に戻す
+      final newTile = TileData(
+        themeId: themeId,
+        currentBest: null,
+        status: TileStatus.empty,
+        history: [],
+      );
+      state = {...state, themeId: newTile};
+      FirestoreService.saveTile(sheetId, themeId, newTile).catchError((e) {
+        debugPrint('Firestore save error: $e');
+      });
+    }
+  }
+
   Future<void> updatePhotoMeta(String themeId, BestPhoto updated) async {
     final existing = state[themeId];
     if (existing == null) return;

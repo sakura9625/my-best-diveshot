@@ -83,8 +83,51 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
         ),
       );
       if (confirm != true) return;
+      await ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(themeId);
+    } else {
+      // 王者がいる場合：写真選択後にダイアログ
+      final tiles = ref.read(tilesProvider(widget.sheetId));
+      final isKing = tiles[themeId]?.isKing == true;
+
+      await ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(themeId);
+
+      // 写真選択後のtile状態を確認
+      final newTiles = ref.read(tilesProvider(widget.sheetId));
+      final newTile = newTiles[themeId];
+      if (newTile == null || !newTile.isProvisional) return;
+
+      if (isKing) {
+        // 王者がいた場合は自動でダイアログを表示
+        if (!mounted) return;
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1A1A2E),
+            title: const Text('王者に認定する', style: TextStyle(color: Colors.white)),
+            content: const Text(
+              'この写真を新たな王者にしてよろしいですか？',
+              style: TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('認定する', style: TextStyle(color: Color(0xFF00B4D8))),
+              ),
+            ],
+          ),
+        );
+        if (confirm == true) {
+          await ref.read(tilesProvider(widget.sheetId).notifier).crownAsKing(themeId);
+        } else {
+          // キャンセル：仮登録を削除して元の王者に戻す
+          await ref.read(tilesProvider(widget.sheetId).notifier).cancelProvisional(themeId);
+        }
+      }
     }
-    await ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(themeId);
   }
 
   Future<void> _saveEdits(TileData tile) async {
@@ -148,7 +191,7 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (hasPhoto && tile?.isProvisional == true)
+              if (hasPhoto && tile?.isProvisional == true && (tile?.history.isEmpty ?? true))
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: Column(
