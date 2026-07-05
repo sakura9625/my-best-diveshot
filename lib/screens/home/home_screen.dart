@@ -29,7 +29,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   List<int> _newBingoLines = [];
   bool _showBingo = false;
-  List<int> _lastCompletedLines = [];
   bool _mySelectWelcomeShown = false;
   Set<int> _celebratedLines = {};
 
@@ -60,9 +59,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final newLines = currentLines
         .where((line) => !_celebratedLines.contains(line))
         .toList();
-    setState(() {
-      _lastCompletedLines = currentLines;
-    });
     if (newLines.isNotEmpty) {
       _celebratedLines.addAll(newLines);
       _saveCelebratedLines(sheetId);
@@ -120,7 +116,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final currentSheetId = ref.watch(currentSheetProvider);
     final tiles = ref.watch(tilesProvider(currentSheetId));
     final completedCount = ref.watch(completedCountProvider(currentSheetId));
-    final completedLines = ref.watch(completedBingoLinesProvider(currentSheetId));
     final mySelectThemeDefs = ref.watch(mySelectThemeDefinitionsProvider);
     final themes = _getThemes(currentSheetId, mySelectThemeDefs);
 
@@ -307,17 +302,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         );
                       },
                     ),
-                    if (_lastCompletedLines.isNotEmpty && !_showBingo)
-                      IgnorePointer(
-                        child: CustomPaint(
-                          size: Size.infinite,
-                          painter: BingoLinePainter(
-                            completedLines: _lastCompletedLines,
-                            padding: 8,
-                            spacing: 4,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -330,7 +314,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onComplete: () => setState(() {
                 _showBingo = false;
                 _newBingoLines = [];
-                _lastCompletedLines = [];
               }),
             ),
         ],
@@ -609,46 +592,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-}
-
-class BingoLinePainter extends CustomPainter {
-  final List<int> completedLines;
-  final double padding;
-  final double spacing;
-
-  BingoLinePainter({
-    required this.completedLines,
-    required this.padding,
-    required this.spacing,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF00B4D8).withOpacity(0.6)
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke;
-
-    final cellWidth = (size.width - padding * 2 - spacing * 4) / 5;
-    final cellHeight = (size.height - padding * 2 - spacing * 4) / 5;
-
-    Offset cellCenter(int index) {
-      final col = index % 5;
-      final row = index ~/ 5;
-      final x = padding + col * (cellWidth + spacing) + cellWidth / 2;
-      final y = padding + row * (cellHeight + spacing) + cellHeight / 2;
-      return Offset(x, y);
-    }
-
-    for (final lineIndex in completedLines) {
-      final line = kBingoLines[lineIndex];
-      final start = cellCenter(line.first);
-      final end = cellCenter(line.last);
-      canvas.drawLine(start, end, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(BingoLinePainter oldDelegate) =>
-      oldDelegate.completedLines != completedLines;
 }

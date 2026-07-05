@@ -87,33 +87,6 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
     await ref.read(tilesProvider(widget.sheetId).notifier).pickAndRegisterPhoto(themeId);
   }
 
-  Future<void> _showUpdateKingConfirmDialog(String themeId) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('王者を更新する', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'この写真を新たな王者にしてよろしいですか？',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('更新する', style: TextStyle(color: Color(0xFF00B4D8))),
-          ),
-        ],
-      ),
-    );
-    if (confirm == true) {
-      await ref.read(tilesProvider(widget.sheetId).notifier).updateKing(themeId);
-    }
-  }
-
   Future<void> _saveEdits(TileData tile) async {
     final current = tile.currentBest!;
     final updated = BestPhoto(
@@ -188,7 +161,30 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                       const SizedBox(height: 6),
                       ElevatedButton.icon(
                         onPressed: () async {
-                          await ref.read(tilesProvider(widget.sheetId).notifier).crownAsKing(theme.id);
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: const Color(0xFF1A1A2E),
+                              title: const Text('王者に認定する', style: TextStyle(color: Colors.white)),
+                              content: const Text(
+                                'この写真を新たな王者にしてよろしいですか？',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('認定する', style: TextStyle(color: Color(0xFF00B4D8))),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            await ref.read(tilesProvider(widget.sheetId).notifier).crownAsKing(theme.id);
+                          }
                         },
                         icon: const Text('👑', style: TextStyle(fontSize: 16)),
                         label: const Text('王者に認定する'),
@@ -204,12 +200,8 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                 ),
               GestureDetector(
                 onTap: () async {
-                  if (tile?.isKing == true) {
-                    await _showUpdateKingConfirmDialog(theme.id);
-                  } else {
-                    final isProvisional = tile?.isProvisional == true;
-                    _showImageSourcePicker(theme.id, isProvisional: isProvisional);
-                  }
+                  final isProvisional = tile?.isProvisional == true;
+                  _showImageSourcePicker(theme.id, isProvisional: isProvisional);
                 },
                 child: hasPhoto && photo != null
                     ? AspectRatio(
@@ -235,12 +227,8 @@ class _DetailScreenState extends ConsumerState<DetailScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: OutlinedButton.icon(
                   onPressed: () async {
-                    if (tile?.isKing == true) {
-                      await _showUpdateKingConfirmDialog(theme.id);
-                    } else {
-                      final isProvisional = tile?.isProvisional == true;
-                      _showImageSourcePicker(theme.id, isProvisional: isProvisional);
-                    }
+                    final isProvisional = tile?.isProvisional == true;
+                    _showImageSourcePicker(theme.id, isProvisional: isProvisional);
                   },
                   icon: const Icon(Icons.swap_horiz, color: Color(0xFF00B4D8), size: 18),
                   label: Text(

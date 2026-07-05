@@ -118,7 +118,7 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     final newTile = TileData(
       themeId: themeId,
       currentBest: newPhoto,
-      status: TileStatus.king,
+      status: TileStatus.provisional,
       history: newHistory,
     );
 
