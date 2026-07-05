@@ -93,10 +93,6 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     if (result == null) return;
 
     final existing = state[themeId];
-    final prevCrownCount = existing?.history.isNotEmpty == true
-        ? existing!.history.map((h) => h.crownCount).reduce((a, b) => a > b ? a : b)
-        : existing?.currentBest?.crownCount ?? 0;
-
     final newPhoto = BestPhoto(
       fileName: result.fileName,
       subjectName: '',
@@ -105,11 +101,9 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
       shotDate: result.shotDate,
       comment: '',
       registeredAt: DateTime.now(),
-      crownedAt: DateTime.now(),
-      crownCount: prevCrownCount + 1,
-      isRestored: false,
     );
 
+    // 旧王者を歴代の末尾に追加（isKingの場合のみ）
     final newHistory = <BestPhoto>[
       ...existing?.history ?? [],
       if (existing?.isKing == true) existing!.currentBest!,
@@ -128,13 +122,12 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     });
   }
 
-  // 仮登録をキャンセルして前の王者に戻す
   Future<void> cancelProvisional(String themeId) async {
     final existing = state[themeId];
     if (existing == null || !existing.isProvisional) return;
 
-    // 歴代王者の最新（直前の王者）を現在の王者に戻す
     if (existing.history.isNotEmpty) {
+      // 歴代の末尾が直前の王者なので復元
       final previousKing = existing.history.last;
       final newHistory = existing.history.sublist(0, existing.history.length - 1);
       final newTile = TileData(
@@ -148,12 +141,12 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
         debugPrint('Firestore save error: $e');
       });
     } else {
-      // 歴代がない場合は空に戻す
+      // 歴代がない場合（初回仮登録のキャンセル）は空に戻す
       final newTile = TileData(
         themeId: themeId,
         currentBest: null,
         status: TileStatus.empty,
-        history: [],
+        history: const [],
       );
       state = {...state, themeId: newTile};
       FirestoreService.saveTile(sheetId, themeId, newTile).catchError((e) {
