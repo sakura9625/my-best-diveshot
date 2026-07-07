@@ -5,6 +5,8 @@ import '../../constants/sheet_definitions.dart';
 import '../../constants/app_config.dart';
 import '../../providers/purchased_sheets_provider.dart';
 import '../../providers/purchase_provider.dart';
+import '../../providers/extra_my_select_provider.dart';
+import '../../services/purchase_service.dart';
 
 class SheetShopScreen extends ConsumerWidget {
   const SheetShopScreen({super.key});
@@ -15,6 +17,7 @@ class SheetShopScreen extends ConsumerWidget {
     final productsAsync = ref.watch(productsProvider);
     final purchaseNotifier = ref.watch(purchaseNotifierProvider);
     final diveCloud = ref.watch(diveCloudProvider);
+    final extraMySelectCount = ref.watch(extraMySelectCountProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A1A),
@@ -63,6 +66,19 @@ class SheetShopScreen extends ConsumerWidget {
                   'DiveCloud Yearly', '年額プラン', '6ヶ月分お得',
                   diveCloud.isActive && diveCloud.planType == 'yearly',
                 ),
+                const SizedBox(height: 24),
+
+                // My Select追加セクション
+                _buildSectionHeader('✨ My Select を追加'),
+                const SizedBox(height: 4),
+                Text(
+                  extraMySelectCount > 0
+                      ? '自分だけのテーマで新しいビンゴシートを追加できます。現在$extraMySelectCount枚追加済み。何度でも購入可能です。'
+                      : '自分だけのテーマで新しいビンゴシートを追加できます。何度でも購入可能です。',
+                  style: const TextStyle(color: Colors.white38, fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                _buildMySelectProduct(context, ref, products),
                 const SizedBox(height: 24),
 
                 // ビンゴシートセクション
@@ -259,6 +275,101 @@ class SheetShopScreen extends ConsumerWidget {
             const SizedBox(height: 4),
             const Text(
               'いつでもキャンセルできます',
+              style: TextStyle(color: Colors.white38, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ref.read(purchaseNotifierProvider).buyProduct(product);
+            },
+            child: const Text('購入する', style: TextStyle(color: Color(0xFF00B4D8))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMySelectProduct(
+    BuildContext context,
+    WidgetRef ref,
+    List<ProductDetails> products,
+  ) {
+    final product = products
+        .where((p) => p.id == PurchaseService.kMySelectExtraProductId)
+        .firstOrNull;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        title: const Text(
+          'My Select追加',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        subtitle: const Text(
+          '25テーマを自由に設定できるシートを1枚追加',
+          style: TextStyle(color: Colors.white38, fontSize: 12),
+        ),
+        trailing: ElevatedButton(
+          onPressed: product == null
+              ? null
+              : () => _showMySelectPurchaseDialog(context, ref, product),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF00B4D8),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            minimumSize: Size.zero,
+          ),
+          child: Text(
+            product?.price ?? '¥200',
+            style: const TextStyle(fontSize: 12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showMySelectPurchaseDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ProductDetails product,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('My Select追加', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '25テーマを自由に設定できるビンゴシートを1枚追加します。',
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              product.price,
+              style: const TextStyle(
+                color: Color(0xFFFFD700),
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '何度でも購入して枠を追加できます',
               style: TextStyle(color: Colors.white38, fontSize: 12),
             ),
           ],

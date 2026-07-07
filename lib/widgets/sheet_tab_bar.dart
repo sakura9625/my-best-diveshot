@@ -6,6 +6,7 @@ import '../providers/sheet_provider.dart';
 import '../providers/tiles_provider.dart';
 import '../providers/bingo_provider.dart';
 import '../providers/purchased_sheets_provider.dart';
+import '../providers/extra_my_select_provider.dart';
 
 class SheetTabBar extends ConsumerWidget {
   const SheetTabBar({super.key});
@@ -37,8 +38,17 @@ class SheetTabBar extends ConsumerWidget {
     final purchasedExtraSheets = kExtraSheets
         .where((s) => AppConfig.isProUser || purchased.contains(s.id))
         .toList();
+    final extraMySelectCount = ref.watch(extraMySelectCountProvider);
+    final extraMySelectSheets = List.generate(extraMySelectCount, (index) =>
+      SheetDefinition(
+        id: 'extra_my_select_$index',
+        name: 'My Select ${index + 2}',
+        type: SheetType.mySelect,
+        order: 100 + index,
+      ),
+    );
 
-    final allSheets = [...kDefaultSheets, ...purchasedExtraSheets];
+    final allSheets = [...kDefaultSheets, ...purchasedExtraSheets, ...extraMySelectSheets];
 
     return Container(
       color: const Color(0xFF0A0A1A),

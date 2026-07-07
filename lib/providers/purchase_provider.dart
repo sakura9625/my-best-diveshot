@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import '../services/purchase_service.dart';
 import '../providers/purchased_sheets_provider.dart';
+import 'extra_my_select_provider.dart';
 
 // 商品情報Provider
 final productsProvider = FutureProvider<List<ProductDetails>>((ref) async {
@@ -35,6 +36,10 @@ class PurchaseNotifier extends ChangeNotifier {
         await _ref.read(diveCloudProvider.notifier).activate('monthly');
       } else if (productId == 'com.hikaru.mybestdiveshot.cloud.yearly') {
         await _ref.read(diveCloudProvider.notifier).activate('yearly');
+      }
+      // My Select追加の購入処理
+      if (productId == PurchaseService.kMySelectExtraProductId) {
+        await _ref.read(extraMySelectCountProvider.notifier).addSlot();
       }
 
       isLoading = false;

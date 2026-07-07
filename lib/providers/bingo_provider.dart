@@ -5,6 +5,7 @@ import '../constants/extra_sheet_themes.dart';
 import '../constants/sheet_definitions.dart';
 import 'tiles_provider.dart';
 import 'my_select_provider.dart';
+import 'extra_my_select_provider.dart';
 
 List<ThemeDefinition> getThemesForSheet(String sheetId, {List<ThemeDefinition>? mySelectThemes}) {
   switch (sheetId) {
@@ -13,6 +14,10 @@ List<ThemeDefinition> getThemesForSheet(String sheetId, {List<ThemeDefinition>? 
     case 'my_select':
       return mySelectThemes ?? kDefaultMySelectThemes.map((t) => toThemeDefinition(t)).toList();
     default:
+      if (sheetId.startsWith('extra_my_select_')) {
+        // 追加My Selectのテーマはスロットごとのfamily Providerで管理されるためここでは取得できない
+        return [];
+      }
       // 追加シートのテーマを検索
       if (kExtraSheetThemesMap.containsKey(sheetId)) {
         return kExtraSheetThemesMap[sheetId]!;
@@ -34,7 +39,12 @@ final completedBingoLinesProvider = Provider.family<List<int>, String>((ref, she
       themes = ref.watch(mySelectThemeDefinitionsProvider);
       break;
     default:
-      themes = kExtraSheetThemesMap[sheetId] ?? kThemes;
+      if (sheetId.startsWith('extra_my_select_')) {
+        final slotIndex = int.tryParse(sheetId.replaceFirst('extra_my_select_', '')) ?? 0;
+        themes = ref.watch(extraMySelectThemeDefinitionsProvider(slotIndex));
+      } else {
+        themes = kExtraSheetThemesMap[sheetId] ?? kThemes;
+      }
   }
 
   final completedLines = <int>[];

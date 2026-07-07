@@ -19,6 +19,13 @@ class ThemeDefinition {
     category: TileCategory.creature,
     gridIndex: index,
   );
+
+  factory ThemeDefinition.extraMySelect(int slotIndex, int index, String name) => ThemeDefinition(
+    id: 'extra_my_select_${slotIndex}_$index',
+    name: name,
+    category: TileCategory.creature,
+    gridIndex: index,
+  );
 }
 
 const List<ThemeDefinition> kThemes = [

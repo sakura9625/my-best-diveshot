@@ -17,6 +17,9 @@ final currentSheetDefinitionProvider = Provider<SheetDefinition>((ref) {
 final sheetUnlockedProvider = Provider.family<bool, String>((ref, sheetId) {
   if (sheetId == 'open_water') return true;
 
+  // 追加My Select（購入済みスロットのみタブに表示されるため常に解放）
+  if (sheetId.startsWith('extra_my_select_')) return true;
+
   // 追加シート（課金）の判定
   final isExtraSheet = kExtraSheets.any((s) => s.id == sheetId);
   if (isExtraSheet) {

@@ -35,7 +35,13 @@ class PurchaseService {
     'com.hikaru.mybestdiveshot.cloud.yearly',
   };
 
-  static Set<String> get kAllProductIds => {...kSheetProductIds, ...kCloudProductIds};
+  static const String kMySelectExtraProductId = 'com.hikaru.mybestdiveshot.myselect.extra';
+
+  static Set<String> get kAllProductIds => {
+    ...kSheetProductIds,
+    ...kCloudProductIds,
+    kMySelectExtraProductId,
+  };
 
   // 商品IDからシートIDへのマッピング
   static const Map<String, String> kProductToSheetId = {
@@ -90,7 +96,10 @@ class PurchaseService {
   // 購入を開始
   Future<void> buyProduct(ProductDetails product) async {
     final purchaseParam = PurchaseParam(productDetails: product);
-    if (kCloudProductIds.contains(product.id)) {
+    if (product.id == kMySelectExtraProductId) {
+      // 何度でも購入できる消費型アイテム
+      await _iap.buyConsumable(purchaseParam: purchaseParam, autoConsume: true);
+    } else if (kCloudProductIds.contains(product.id)) {
       await _iap.buyNonConsumable(purchaseParam: purchaseParam);
     } else {
       await _iap.buyNonConsumable(purchaseParam: purchaseParam);

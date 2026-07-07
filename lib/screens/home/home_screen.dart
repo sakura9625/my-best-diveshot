@@ -11,10 +11,12 @@ import '../../providers/bingo_provider.dart';
 import '../../providers/sheet_provider.dart';
 import '../../providers/my_select_provider.dart';
 import '../../providers/purchased_sheets_provider.dart';
+import '../../providers/extra_my_select_provider.dart';
 import '../../widgets/bingo_overlay.dart';
 import '../../widgets/resolved_image.dart';
 import '../detail/detail_screen.dart';
 import '../my_select/my_select_settings_screen.dart';
+import '../my_select/extra_my_select_settings_screen.dart';
 import '../shop/sheet_shop_screen.dart';
 import '../presentation/presentation_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -107,6 +109,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       case 'my_select':
         return mySelectThemeDefs;
       default:
+        if (sheetId.startsWith('extra_my_select_')) {
+          final slotIndex = int.tryParse(sheetId.replaceFirst('extra_my_select_', '')) ?? 0;
+          return ref.watch(extraMySelectThemeDefinitionsProvider(slotIndex));
+        }
         return kExtraSheetThemesMap[sheetId] ?? kThemes;
     }
   }
@@ -135,18 +141,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Consumer(
             builder: (context, ref, _) {
               final sheetId = ref.watch(currentSheetProvider);
-              if (sheetId != 'my_select') return const SizedBox.shrink();
-              return IconButton(
-                icon: const Icon(Icons.edit, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MySelectSettingsScreen(),
-                    ),
-                  );
-                },
-              );
+              if (sheetId == 'my_select') {
+                return IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const MySelectSettingsScreen(),
+                      ),
+                    );
+                  },
+                );
+              }
+              if (sheetId.startsWith('extra_my_select_')) {
+                final slotIndex = int.tryParse(sheetId.replaceFirst('extra_my_select_', '')) ?? 0;
+                return IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ExtraMySelectSettingsScreen(slotIndex: slotIndex),
+                      ),
+                    );
+                  },
+                );
+              }
+              return const SizedBox.shrink();
             },
           ),
           IconButton(
@@ -336,6 +358,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final purchasedExtraSheets = kExtraSheets
         .where((s) => AppConfig.isProUser || purchased.contains(s.id))
         .toList();
+    final extraMySelectCount = ref.watch(extraMySelectCountProvider);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
@@ -378,6 +401,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.only(right: 8),
                   child: _buildExtraSheetCard(ref, sheet.id, sheet.name, currentSheetId),
                 )),
+                // 購入済みの追加My Selectスロット
+                ...List.generate(extraMySelectCount, (index) {
+                  final sheetId = 'extra_my_select_$index';
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _buildExtraMySelectCard(ref, sheetId, index, currentSheetId),
+                  );
+                }),
                 // 追加スロット（ショップへ）
                 ..._buildLockedSlots(context, ref, purchasedExtraSheets.length),
               ],
@@ -441,6 +472,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExtraMySelectCard(WidgetRef ref, String sheetId, int slotIndex, String currentSheetId) {
+    final isSelected = sheetId == currentSheetId;
+    final completedCount = ref.watch(completedCountProvider(sheetId));
+
+    return GestureDetector(
+      onTap: () => ref.read(currentSheetProvider.notifier).state = sheetId,
+      child: Container(
+        width: 90,
+        height: 60,
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF00B4D8).withOpacity(0.15) : const Color(0xFF1A1A2E),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF00B4D8) : Colors.white24,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '$completedCount/25',
+              style: TextStyle(
+                color: isSelected ? const Color(0xFF00B4D8) : Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'My Select ${slotIndex + 2}',
+              style: TextStyle(
+                color: isSelected ? const Color(0xFF00B4D8) : Colors.white54,
+                fontSize: 9,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
