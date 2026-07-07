@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:flutter/material.dart';
+import 'storage_service.dart';
 
 class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -82,6 +83,9 @@ class AuthService {
 
       // ユーザードキュメント削除
       await db.collection('users').doc(uid).delete();
+
+      // Storageデータを削除
+      await StorageService.deleteAllPhotos();
 
       // Firebaseアカウント削除
       await user.delete();

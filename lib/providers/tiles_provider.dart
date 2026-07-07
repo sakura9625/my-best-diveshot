@@ -4,14 +4,17 @@ import '../models/tile_data.dart';
 import '../models/best_photo.dart';
 import '../services/image_service.dart';
 import '../services/firestore_service.dart';
+import '../services/storage_service.dart';
+import 'purchased_sheets_provider.dart';
 
 final tilesProvider = StateNotifierProvider.family<TilesNotifier, Map<String, TileData>, String>((ref, sheetId) {
-  return TilesNotifier(sheetId);
+  return TilesNotifier(sheetId, ref);
 });
 
 class TilesNotifier extends StateNotifier<Map<String, TileData>> {
   final String sheetId;
-  TilesNotifier(this.sheetId) : super({}) {
+  final Ref? _ref;
+  TilesNotifier(this.sheetId, [this._ref]) : super({}) {
     _loadFromFirestore();
   }
 
@@ -51,6 +54,22 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     );
 
     state = {...state, themeId: newTile};
+
+    // DiveCloud有効時はStorageにもアップロード
+    final diveCloud = _ref?.read(diveCloudProvider);
+    if (diveCloud?.isActive == true) {
+      ImageService.resolveImagePath(result.fileName).then((localPath) {
+        StorageService.uploadPhoto(
+          localPath: localPath,
+          sheetId: sheetId,
+          themeId: themeId,
+          fileName: result.fileName,
+        );
+      }).catchError((e) {
+        debugPrint('Storage upload error: $e');
+      });
+    }
+
     FirestoreService.saveTile(sheetId, themeId, newTile).catchError((e) {
       debugPrint('Firestore save error: $e');
     });
