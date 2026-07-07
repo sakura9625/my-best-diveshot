@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../constants/sheet_definitions.dart';
 import '../../constants/app_config.dart';
 import '../../providers/purchased_sheets_provider.dart';
 import '../../providers/purchase_provider.dart';
 import '../../providers/extra_my_select_provider.dart';
 import '../../services/purchase_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/migration_service.dart';
 
 class SheetShopScreen extends ConsumerWidget {
   const SheetShopScreen({super.key});
@@ -249,7 +252,47 @@ class SheetShopScreen extends ConsumerWidget {
     WidgetRef ref,
     String label,
     ProductDetails product,
-  ) {
+  ) async {
+    // サインイン確認
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      // 未サインインの場合はサインインを促す
+      final shouldSignIn = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          title: const Text('サインインが必要です', style: TextStyle(color: Colors.white)),
+          content: const Text(
+            'DiveCloudはクラウド同期のためApple IDでのサインインが必要です。',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('サインインする', style: TextStyle(color: Color(0xFF00B4D8))),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldSignIn != true) return;
+      if (!context.mounted) return;
+
+      // サインイン実行
+      final result = await AuthService.signInWithApple();
+      if (result == null) return;
+      if (!context.mounted) return;
+
+      // データ移行
+      await MigrationService.migrateToAppleId();
+      if (!context.mounted) return;
+    }
+
+    // 購入ダイアログ表示
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
