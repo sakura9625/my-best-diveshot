@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:flutter/material.dart';
@@ -58,4 +59,44 @@ class AuthService {
 
   // 現在のユーザーID（Apple IDまたはデバイスID）
   static String? get userId => _auth.currentUser?.uid;
+
+  // アカウント削除（Firebaseユーザー＋Firestoreデータ）
+  static Future<bool> deleteAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+
+      final uid = user.uid;
+      final db = FirebaseFirestore.instance;
+
+      // Firestoreデータを削除
+      await _deleteCollection(db.collection('users').doc(uid).collection('tiles'));
+      await _deleteCollection(db.collection('users').doc(uid).collection('settings'));
+
+      // sheetsコレクション内のtilesも削除
+      final sheetsSnapshot = await db.collection('users').doc(uid).collection('sheets').get();
+      for (final sheetDoc in sheetsSnapshot.docs) {
+        await _deleteCollection(sheetDoc.reference.collection('tiles'));
+        await sheetDoc.reference.delete();
+      }
+
+      // ユーザードキュメント削除
+      await db.collection('users').doc(uid).delete();
+
+      // Firebaseアカウント削除
+      await user.delete();
+
+      return true;
+    } catch (e) {
+      debugPrint('Delete account error: $e');
+      return false;
+    }
+  }
+
+  static Future<void> _deleteCollection(CollectionReference collection) async {
+    final snapshot = await collection.get();
+    for (final doc in snapshot.docs) {
+      await doc.reference.delete();
+    }
+  }
 }

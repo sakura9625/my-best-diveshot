@@ -128,6 +128,15 @@ class SettingsScreen extends ConsumerWidget {
             ),
             child: const Text('サインアウト', style: TextStyle(color: Colors.white54)),
           ),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            onPressed: () => _deleteAccount(context, ref),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: Colors.red.withOpacity(0.5)),
+              minimumSize: const Size(double.infinity, 40),
+            ),
+            child: const Text('アカウントを削除', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -171,6 +180,58 @@ class SettingsScreen extends ConsumerWidget {
     );
     if (confirm == true) {
       await AuthService.signOut();
+    }
+  }
+
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('アカウントを削除', style: TextStyle(color: Colors.red)),
+        content: const Text(
+          '⚠️ この操作は取り消せません。\n\nすべてのデータ（王者写真・ビンゴ記録・購入済みシート）が完全に削除されます。\n\nよろしいですか？',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('削除する', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+    if (!context.mounted) return;
+
+    // 再認証が必要な場合があるため再度Appleサインイン
+    final reauth = await AuthService.signInWithApple();
+    if (reauth == null) return;
+    if (!context.mounted) return;
+
+    final success = await AuthService.deleteAccount();
+    if (!context.mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('アカウントを削除しました'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('削除に失敗しました。もう一度お試しください。'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }
