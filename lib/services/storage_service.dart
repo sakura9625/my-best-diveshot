@@ -85,4 +85,61 @@ class StorageService {
       debugPrint('Delete folder error: $e');
     }
   }
+
+  // ユーザーの全写真情報を取得（複数端末同期用）
+  static Future<Map<String, String>> fetchAllPhotoUrls() async {
+    if (_userId == null) return {};
+    try {
+      final result = <String, String>{};
+      final ref = _storage.ref().child('users').child(_userId!);
+      await _fetchUrls(ref, result, '');
+      return result;
+    } catch (e) {
+      debugPrint('Fetch photo urls error: $e');
+      return {};
+    }
+  }
+
+  static Future<void> _fetchUrls(
+    Reference ref,
+    Map<String, String> result,
+    String prefix,
+  ) async {
+    final listResult = await ref.listAll();
+    for (final item in listResult.items) {
+      final url = await item.getDownloadURL();
+      result[item.name] = url;
+    }
+    for (final prefixRef in listResult.prefixes) {
+      await _fetchUrls(prefixRef, result, prefix);
+    }
+  }
+
+  // 特定ファイルのダウンロードURLを取得
+  static Future<String?> getDownloadUrl({
+    required String sheetId,
+    required String fileName,
+  }) async {
+    if (_userId == null) return null;
+    try {
+      // ファイル名からthemeIdを復元（fileName形式: {themeId}_{uuid}.jpg）
+      // themeId自体に'_'を含む場合があるため、末尾のuuid部分のみを取り除く
+      final parts = fileName.split('_');
+      final themeId = parts.length > 1
+          ? parts.sublist(0, parts.length - 1).join('_')
+          : parts.first;
+      final ref = _storage
+          .ref()
+          .child('users')
+          .child(_userId!)
+          .child('sheets')
+          .child(sheetId)
+          .child(themeId)
+          .child(fileName);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      debugPrint('Get download url error: $e');
+      return null;
+    }
+  }
 }

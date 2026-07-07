@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/tile_data.dart';
@@ -24,8 +25,43 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     try {
       final tiles = await FirestoreService.fetchAllTiles(sheetId);
       state = tiles;
+
+      // DiveCloud有効時は写真をローカルに同期
+      final diveCloud = _ref?.read(diveCloudProvider);
+      if (diveCloud?.isActive == true) {
+        await _syncPhotosFromStorage(tiles);
+      }
     } catch (e) {
       debugPrint('Firestore load error: $e');
+    }
+  }
+
+  Future<void> _syncPhotosFromStorage(Map<String, TileData> tiles) async {
+    try {
+      final allPhotos = <BestPhoto>[];
+      for (final tile in tiles.values) {
+        if (tile.currentBest != null) allPhotos.add(tile.currentBest!);
+        allPhotos.addAll(tile.history);
+      }
+
+      for (final photo in allPhotos) {
+        final localPath = await ImageService.resolveImagePath(photo.fileName);
+        if (!File(localPath).existsSync()) {
+          // ローカルにない場合はStorageからダウンロード
+          final url = await StorageService.getDownloadUrl(
+            sheetId: sheetId,
+            fileName: photo.fileName,
+          );
+          if (url != null) {
+            await StorageService.downloadPhoto(
+              downloadUrl: url,
+              fileName: photo.fileName,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Sync photos error: $e');
     }
   }
 
@@ -136,6 +172,22 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
     );
 
     state = {...state, themeId: newTile};
+
+    // DiveCloud有効時はStorageにもアップロード
+    final diveCloud = _ref?.read(diveCloudProvider);
+    if (diveCloud?.isActive == true) {
+      final localPath = await ImageService.resolveImagePath(result.fileName);
+      StorageService.uploadPhoto(
+        localPath: localPath,
+        sheetId: sheetId,
+        themeId: themeId,
+        fileName: result.fileName,
+      ).catchError((e) {
+        debugPrint('Storage upload error: $e');
+        return null;
+      });
+    }
+
     FirestoreService.saveTile(sheetId, themeId, newTile).catchError((e) {
       debugPrint('Firestore save error: $e');
     });
