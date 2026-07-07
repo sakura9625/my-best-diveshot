@@ -19,6 +19,7 @@ import '../my_select/my_select_settings_screen.dart';
 import '../my_select/extra_my_select_settings_screen.dart';
 import '../shop/sheet_shop_screen.dart';
 import '../presentation/presentation_screen.dart';
+import '../settings/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -138,6 +139,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+          ),
           Consumer(
             builder: (context, ref, _) {
               final sheetId = ref.watch(currentSheetProvider);

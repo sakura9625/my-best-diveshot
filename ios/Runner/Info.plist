@@ -74,5 +74,14 @@
 	<string>写真をフォトライブラリに保存するために、アクセスが必要です。</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>撮影場所の記録に位置情報を使用することがあります。</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>signinwithapple</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
