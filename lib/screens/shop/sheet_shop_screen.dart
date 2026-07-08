@@ -235,9 +235,10 @@ class SheetShopScreen extends ConsumerWidget {
                 onPressed: product == null
                     ? null
                     : () async {
-                        final user = FirebaseAuth.instance.currentUser;
+                        // サインイン状態を確認
+                        User? user = FirebaseAuth.instance.currentUser;
+
                         if (user == null) {
-                          // 未サインインの場合はサインインを促す
                           if (!context.mounted) return;
                           final shouldSignIn = await showDialog<bool>(
                             context: context,
@@ -262,24 +263,29 @@ class SheetShopScreen extends ConsumerWidget {
                           );
                           if (shouldSignIn != true) return;
 
-                          final result = await AuthService.signInWithApple();
-                          if (result == null) return;
-                          await MigrationService.migrateToAppleId();
-
-                          // サインイン完了後、ScaffoldMessengerで通知してから購入ダイアログへ
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('サインインしました。もう一度タップして購入してください。'),
-                              backgroundColor: Color(0xFF00B4D8),
-                              duration: Duration(seconds: 3),
-                            ),
-                          );
-                          return; // 一度returnしてユーザーに再タップを促す
+                          try {
+                            final result = await AuthService.signInWithApple();
+                            if (result == null) return;
+                            // サインイン後にユーザーを再取得
+                            user = FirebaseAuth.instance.currentUser;
+                            await MigrationService.migrateToAppleId();
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('サインインエラー: $e'),
+                                backgroundColor: Colors.red,
+                                duration: const Duration(seconds: 5),
+                              ),
+                            );
+                            return;
+                          }
                         }
 
-                        // サインイン済みの場合は購入ダイアログを表示
+                        // サインイン済み（またはサインイン完了）の場合は購入ダイアログを表示
+                        if (user == null) return;
                         if (!context.mounted) return;
+
                         showDialog(
                           context: context,
                           builder: (ctx) => AlertDialog(
