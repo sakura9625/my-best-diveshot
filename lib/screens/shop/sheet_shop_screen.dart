@@ -234,7 +234,9 @@ class SheetShopScreen extends ConsumerWidget {
             : ElevatedButton(
                 onPressed: product == null
                     ? null
-                    : () => _showCloudPurchaseDialog(context, ref, label, product),
+                    : () async {
+                        await _showCloudPurchaseDialog(context, ref, label, product);
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00B4D8),
                   foregroundColor: Colors.white,
@@ -247,7 +249,7 @@ class SheetShopScreen extends ConsumerWidget {
     );
   }
 
-  void _showCloudPurchaseDialog(
+  Future<void> _showCloudPurchaseDialog(
     BuildContext context,
     WidgetRef ref,
     String label,
@@ -256,7 +258,6 @@ class SheetShopScreen extends ConsumerWidget {
     // サインイン確認
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      // 未サインインの場合はサインインを促す
       final shouldSignIn = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -278,22 +279,20 @@ class SheetShopScreen extends ConsumerWidget {
           ],
         ),
       );
-
       if (shouldSignIn != true) return;
-      if (!context.mounted) return;
 
-      // サインイン実行
       final result = await AuthService.signInWithApple();
       if (result == null) return;
-      if (!context.mounted) return;
 
-      // データ移行
       await MigrationService.migrateToAppleId();
-      if (!context.mounted) return;
     }
 
+    // contextのチェックをせずに直接BuildContextを使う代わりに
+    // Navigator.of(context)が有効かチェック
+    if (!context.mounted) return;
+
     // 購入ダイアログ表示
-    showDialog(
+    await showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
