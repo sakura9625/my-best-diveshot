@@ -235,7 +235,95 @@ class SheetShopScreen extends ConsumerWidget {
                 onPressed: product == null
                     ? null
                     : () async {
-                        await _showCloudPurchaseDialog(context, ref, label, product);
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user == null) {
+                          // 未サインインの場合はサインインを促す
+                          if (!context.mounted) return;
+                          final shouldSignIn = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: const Color(0xFF1A1A2E),
+                              title: const Text('サインインが必要です', style: TextStyle(color: Colors.white)),
+                              content: const Text(
+                                'DiveCloudはクラウド同期のためApple IDでのサインインが必要です。',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('サインインする', style: TextStyle(color: Color(0xFF00B4D8))),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (shouldSignIn != true) return;
+
+                          final result = await AuthService.signInWithApple();
+                          if (result == null) return;
+                          await MigrationService.migrateToAppleId();
+
+                          // サインイン完了後、ScaffoldMessengerで通知してから購入ダイアログへ
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('サインインしました。もう一度タップして購入してください。'),
+                              backgroundColor: Color(0xFF00B4D8),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                          return; // 一度returnしてユーザーに再タップを促す
+                        }
+
+                        // サインイン済みの場合は購入ダイアログを表示
+                        if (!context.mounted) return;
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            backgroundColor: const Color(0xFF1A1A2E),
+                            title: Text('DiveCloud $label', style: const TextStyle(color: Colors.white)),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  '写真をクラウドに保存し、機種変更や複数端末での同期ができます。',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  product.price,
+                                  style: const TextStyle(
+                                    color: Color(0xFFFFD700),
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'いつでもキャンセルできます',
+                                  style: TextStyle(color: Colors.white38, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  ref.read(purchaseNotifierProvider).buyProduct(product);
+                                },
+                                child: const Text('購入する', style: TextStyle(color: Color(0xFF00B4D8))),
+                              ),
+                            ],
+                          ),
+                        );
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00B4D8),
@@ -245,95 +333,6 @@ class SheetShopScreen extends ConsumerWidget {
                 ),
                 child: const Text('購入', style: TextStyle(fontSize: 12)),
               ),
-      ),
-    );
-  }
-
-  Future<void> _showCloudPurchaseDialog(
-    BuildContext context,
-    WidgetRef ref,
-    String label,
-    ProductDetails product,
-  ) async {
-    // サインイン確認
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      final shouldSignIn = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
-          title: const Text('サインインが必要です', style: TextStyle(color: Colors.white)),
-          content: const Text(
-            'DiveCloudはクラウド同期のためApple IDでのサインインが必要です。',
-            style: TextStyle(color: Colors.white70),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('サインインする', style: TextStyle(color: Color(0xFF00B4D8))),
-            ),
-          ],
-        ),
-      );
-      if (shouldSignIn != true) return;
-
-      final result = await AuthService.signInWithApple();
-      if (result == null) return;
-
-      await MigrationService.migrateToAppleId();
-    }
-
-    // contextのチェックをせずに直接BuildContextを使う代わりに
-    // Navigator.of(context)が有効かチェック
-    if (!context.mounted) return;
-
-    // 購入ダイアログ表示
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: Text('DiveCloud $label', style: const TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '写真をクラウドに保存し、機種変更や複数端末での同期ができます。',
-              style: TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              product.price,
-              style: const TextStyle(
-                color: Color(0xFFFFD700),
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'いつでもキャンセルできます',
-              style: TextStyle(color: Colors.white38, fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(purchaseNotifierProvider).buyProduct(product);
-            },
-            child: const Text('購入する', style: TextStyle(color: Color(0xFF00B4D8))),
-          ),
-        ],
       ),
     );
   }
