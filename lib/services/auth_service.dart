@@ -29,29 +29,23 @@ class AuthService {
 
   // Appleでサインイン
   static Future<UserCredential?> signInWithApple() async {
-    try {
-      final rawNonce = _generateNonce();
-      final nonce = _sha256ofString(rawNonce);
+    final rawNonce = _generateNonce();
+    final nonce = _sha256ofString(rawNonce);
 
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-        nonce: nonce,
-      );
+    final appleCredential = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+      nonce: nonce,
+    );
 
-      final oauthCredential = OAuthProvider('apple.com').credential(
-        idToken: appleCredential.identityToken,
-        rawNonce: rawNonce,
-      );
+    final oauthCredential = OAuthProvider('apple.com').credential(
+      idToken: appleCredential.identityToken,
+      rawNonce: rawNonce,
+    );
 
-      return await _auth.signInWithCredential(oauthCredential);
-    } catch (e) {
-      debugPrint('Apple sign in error type: ${e.runtimeType}');
-      debugPrint('Apple sign in error: $e');
-      return null;
-    }
+    return await _auth.signInWithCredential(oauthCredential);
   }
 
   // サインアウト
