@@ -48,6 +48,7 @@ class AuthService {
 
       return await _auth.signInWithCredential(oauthCredential);
     } catch (e) {
+      debugPrint('Apple sign in error type: ${e.runtimeType}');
       debugPrint('Apple sign in error: $e');
       return null;
     }

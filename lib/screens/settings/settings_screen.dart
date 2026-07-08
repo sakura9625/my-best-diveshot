@@ -143,16 +143,35 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _signIn(BuildContext context, WidgetRef ref) async {
-    final result = await AuthService.signInWithApple();
-    if (result != null && context.mounted) {
-      // データ移行
-      await MigrationService.migrateToAppleId();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('サインインしました'),
-          backgroundColor: Color(0xFF00B4D8),
-        ),
-      );
+    try {
+      final result = await AuthService.signInWithApple();
+      if (result != null && context.mounted) {
+        await MigrationService.migrateToAppleId();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('サインインしました'),
+            backgroundColor: Color(0xFF00B4D8),
+          ),
+        );
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('サインインに失敗しました。もう一度お試しください。'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('エラー: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 10),
+          ),
+        );
+      }
     }
   }
 
