@@ -11,38 +11,47 @@ class MigrationService {
       final localDeviceId = await DeviceService.getLocalDeviceId();
       final appleUserId = await DeviceService.getDeviceId();
 
-      if (localDeviceId == appleUserId) return; // 同じIDなら移行不要
+      if (localDeviceId == appleUserId) return;
 
-      final sourceRef = _db.collection('users').doc(localDeviceId);
       final targetRef = _db.collection('users').doc(appleUserId);
-
-      // すでに移行済みか確認
       final targetDoc = await targetRef.get();
       if (targetDoc.exists) {
-        debugPrint('Migration: target already exists, skipping');
-        return;
+        // サブコレクションがあるか確認
+        final targetTiles = await targetRef
+            .collection('sheets')
+            .doc('open_water')
+            .collection('tiles')
+            .limit(1)
+            .get();
+        if (targetTiles.docs.isNotEmpty) {
+          debugPrint('Migration: target already has data, skipping');
+          return;
+        }
       }
 
-      // tilesコレクションを移行
-      await _migrateCollection(
-        source: sourceRef.collection('tiles'),
-        target: targetRef.collection('tiles'),
-      );
+      // 全シートIDを直接取得（ハンギングドキュメント対応）
+      const sheetIds = [
+        'open_water', 'advance', 'my_select',
+        'ishigaki', 'izu', 'macro', 'wide', 'kushimoto',
+        'kashiwajima', 'deep', 'hanadi', 'nudibranch_iro',
+        'nudibranch_other', 'goby_bingo', 'crustacean_standard',
+        'crustacean_hidden',
+      ];
 
-      // settingsコレクションを移行
+      final sourceRef = _db.collection('users').doc(localDeviceId);
+
+      for (final sheetId in sheetIds) {
+        await _migrateCollection(
+          source: sourceRef.collection('sheets').doc(sheetId).collection('tiles'),
+          target: targetRef.collection('sheets').doc(sheetId).collection('tiles'),
+        );
+      }
+
+      // settingsを移行
       await _migrateCollection(
         source: sourceRef.collection('settings'),
         target: targetRef.collection('settings'),
       );
-
-      // sheetsコレクションを移行
-      final sheetsSnapshot = await sourceRef.collection('sheets').get();
-      for (final sheetDoc in sheetsSnapshot.docs) {
-        await _migrateCollection(
-          source: sheetDoc.reference.collection('tiles'),
-          target: targetRef.collection('sheets').doc(sheetDoc.id).collection('tiles'),
-        );
-      }
 
       debugPrint('Migration: completed successfully');
     } catch (e) {
