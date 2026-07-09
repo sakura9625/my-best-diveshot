@@ -228,11 +228,6 @@ class SettingsScreen extends ConsumerWidget {
     if (confirm != true) return;
     if (!context.mounted) return;
 
-    // 再認証が必要な場合があるため再度Appleサインイン
-    final reauth = await AuthService.signInWithApple();
-    if (reauth == null) return;
-    if (!context.mounted) return;
-
     final success = await AuthService.deleteAccount();
     if (!context.mounted) return;
 
