@@ -228,7 +228,7 @@ class SettingsScreen extends ConsumerWidget {
     if (confirm != true) return;
     if (!context.mounted) return;
 
-    final success = await AuthService.deleteAccount(context);
+    final success = await AuthService.deleteAccount();
     if (!context.mounted) return;
 
     if (success) {

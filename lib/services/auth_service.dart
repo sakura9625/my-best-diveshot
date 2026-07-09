@@ -64,7 +64,7 @@ class AuthService {
 
   // アカウント削除（Firebaseユーザー＋Firestoreデータ）
   // Apple再認証＋トークン失効はApp Store審査ガイドライン5.1.1対応
-  static Future<bool> deleteAccount(BuildContext context) async {
+  static Future<bool> deleteAccount() async {
     try {
       final user = _auth.currentUser;
       if (user == null) return false;
@@ -102,28 +102,6 @@ class AuthService {
         await _auth.revokeTokenWithAuthorizationCode(appleCredential.authorizationCode);
       } catch (e) {
         debugPrint('Apple token revoke failed: $e');
-        // TODO: DEBUG - remove before release
-        if (context.mounted) {
-          await showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Apple token revoke failed (DEBUG)'),
-              content: SingleChildScrollView(
-                child: SelectableText(
-                  'code: ${e is FirebaseAuthException ? e.code : 'N/A'}\n\n'
-                  'message: ${e is FirebaseAuthException ? e.message : 'N/A'}\n\n'
-                  'toString: $e',
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
-        }
       }
 
       final uid = user.uid;
