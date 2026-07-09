@@ -265,7 +265,7 @@ class SheetShopScreen extends ConsumerWidget {
                           if (!context.mounted) return;
 
                           try {
-                            final result = await AuthService.signInWithApple(context);
+                            final result = await AuthService.signInWithApple();
                             if (result == null) return;
                             // サインイン後にユーザーを再取得
                             user = FirebaseAuth.instance.currentUser;
