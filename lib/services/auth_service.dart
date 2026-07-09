@@ -63,10 +63,46 @@ class AuthService {
   static String? get userId => _auth.currentUser?.uid;
 
   // アカウント削除（Firebaseユーザー＋Firestoreデータ）
+  // Apple再認証＋トークン失効はApp Store審査ガイドライン5.1.1対応
   static Future<bool> deleteAccount() async {
     try {
       final user = _auth.currentUser;
       if (user == null) return false;
+
+      // Apple再認証
+      final rawNonce = _generateNonce();
+      final nonce = _sha256ofString(rawNonce);
+
+      AuthorizationCredentialAppleID appleCredential;
+      try {
+        appleCredential = await SignInWithApple.getAppleIDCredential(
+          scopes: [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+          nonce: nonce,
+        );
+      } on SignInWithAppleAuthorizationException catch (e) {
+        if (e.code == AuthorizationErrorCode.canceled) {
+          return false;
+        }
+        rethrow;
+      }
+
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      await user.reauthenticateWithCredential(oauthCredential);
+
+      // Appleトークンの失効（ベストエフォート）
+      try {
+        await _auth.revokeTokenWithAuthorizationCode(appleCredential.authorizationCode);
+      } catch (e) {
+        debugPrint('Apple token revoke failed: $e');
+      }
 
       final uid = user.uid;
       final db = FirebaseFirestore.instance;
