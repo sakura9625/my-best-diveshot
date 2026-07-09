@@ -51,6 +51,7 @@ class AuthService {
     final oauthCredential = OAuthProvider('apple.com').credential(
       idToken: appleCredential.identityToken,
       rawNonce: rawNonce,
+      accessToken: appleCredential.authorizationCode,
     );
 
     // TODO: DEBUG - remove before release
