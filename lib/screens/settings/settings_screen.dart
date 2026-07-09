@@ -144,7 +144,7 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _signIn(BuildContext context, WidgetRef ref) async {
     try {
-      final result = await AuthService.signInWithApple();
+      final result = await AuthService.signInWithApple(context);
       if (result != null && context.mounted) {
         await MigrationService.migrateToAppleId();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -229,7 +229,7 @@ class SettingsScreen extends ConsumerWidget {
     if (!context.mounted) return;
 
     // 再認証が必要な場合があるため再度Appleサインイン
-    final reauth = await AuthService.signInWithApple();
+    final reauth = await AuthService.signInWithApple(context);
     if (reauth == null) return;
     if (!context.mounted) return;
 

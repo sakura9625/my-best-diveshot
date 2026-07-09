@@ -28,7 +28,8 @@ class AuthService {
   }
 
   // Appleでサインイン
-  static Future<UserCredential?> signInWithApple() async {
+  // TODO: DEBUG - remove before release
+  static Future<UserCredential?> signInWithApple(BuildContext context) async {
     final rawNonce = _generateNonce();
     final nonce = _sha256ofString(rawNonce);
 
@@ -40,12 +41,42 @@ class AuthService {
       nonce: nonce,
     );
 
+    // TODO: DEBUG - remove before release
+    final token = appleCredential.identityToken ?? '';
+    String payload = 'token is null or empty';
+    if (token.contains('.')) {
+      payload = utf8.decode(base64Url.decode(base64Url.normalize(token.split('.')[1])));
+    }
+
     final oauthCredential = OAuthProvider('apple.com').credential(
       idToken: appleCredential.identityToken,
       rawNonce: rawNonce,
     );
 
-    return await _auth.signInWithCredential(oauthCredential);
+    // TODO: DEBUG - remove before release
+    try {
+      return await _auth.signInWithCredential(oauthCredential);
+    } on FirebaseAuthException catch (e) {
+      if (!context.mounted) rethrow;
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('FirebaseAuthException (DEBUG)'),
+          content: SingleChildScrollView(
+            child: SelectableText(
+              'code: ${e.code}\n\nmessage: ${e.message}\n\npayload: $payload',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      rethrow;
+    }
   }
 
   // サインアウト
