@@ -19,6 +19,7 @@ class PurchaseNotifier extends ChangeNotifier {
   final Ref _ref;
   bool isLoading = false;
   String? errorMessage;
+  Function(String productId)? onDiveCloudPurchased;
 
   PurchaseNotifier(this._ref) {
     _initPurchaseService();
@@ -34,8 +35,10 @@ class PurchaseNotifier extends ChangeNotifier {
       // DiveCloudの購入処理
       if (productId == 'com.hikaru.mybestdiveshot.cloud.monthly') {
         await _ref.read(diveCloudProvider.notifier).activate('monthly');
+        onDiveCloudPurchased?.call(productId);
       } else if (productId == 'com.hikaru.mybestdiveshot.cloud.yearly') {
         await _ref.read(diveCloudProvider.notifier).activate('yearly');
+        onDiveCloudPurchased?.call(productId);
       }
       // My Select追加の購入処理
       if (productId == PurchaseService.kMySelectExtraProductId) {

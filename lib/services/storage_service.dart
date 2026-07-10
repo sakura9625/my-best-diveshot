@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import '../models/tile_data.dart';
+import 'image_service.dart';
 
 class StorageService {
   static final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -112,6 +114,57 @@ class StorageService {
     }
     for (final prefixRef in listResult.prefixes) {
       await _fetchUrls(prefixRef, result, prefix);
+    }
+  }
+
+  // ローカルの全写真をStorageにアップロード
+  static Future<void> uploadAllLocalPhotos({
+    required Map<String, Map<String, TileData>> allSheetTiles,
+    Function(int done, int total)? onProgress,
+  }) async {
+    if (_userId == null) return;
+
+    // アップロード対象の写真を収集
+    final targets = <Map<String, String>>[];
+    for (final entry in allSheetTiles.entries) {
+      final sheetId = entry.key;
+      for (final tileEntry in entry.value.entries) {
+        final themeId = tileEntry.key;
+        final tile = tileEntry.value;
+        if (tile.currentBest != null) {
+          targets.add({
+            'sheetId': sheetId,
+            'themeId': themeId,
+            'fileName': tile.currentBest!.fileName,
+          });
+        }
+        for (final history in tile.history) {
+          targets.add({
+            'sheetId': sheetId,
+            'themeId': themeId,
+            'fileName': history.fileName,
+          });
+        }
+      }
+    }
+
+    int done = 0;
+    for (final target in targets) {
+      try {
+        final localPath = await ImageService.resolveImagePath(target['fileName']!);
+        if (File(localPath).existsSync()) {
+          await uploadPhoto(
+            localPath: localPath,
+            sheetId: target['sheetId']!,
+            themeId: target['themeId']!,
+            fileName: target['fileName']!,
+          );
+        }
+      } catch (e) {
+        debugPrint('Batch upload error: $e');
+      }
+      done++;
+      onProgress?.call(done, targets.length);
     }
   }
 

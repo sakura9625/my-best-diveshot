@@ -10,12 +10,20 @@ import '../../providers/extra_my_select_provider.dart';
 import '../../services/purchase_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/migration_service.dart';
+import '../../services/batch_upload_service.dart';
 
 class SheetShopScreen extends ConsumerWidget {
   const SheetShopScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // DiveCloud購入完了時のバッチアップロード設定
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(purchaseNotifierProvider).onDiveCloudPurchased = (productId) {
+        BatchUploadService.uploadAllPhotos(ref, context);
+      };
+    });
+
     final purchased = ref.watch(purchasedSheetsProvider);
     final productsAsync = ref.watch(productsProvider);
     final purchaseNotifier = ref.watch(purchaseNotifierProvider);
