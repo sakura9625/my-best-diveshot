@@ -158,17 +158,16 @@ class SettingsScreen extends ConsumerWidget {
           const SnackBar(
             content: Text('サインインに失敗しました。もう一度お試しください。'),
             backgroundColor: Colors.red,
-            duration: Duration(seconds: 5),
           ),
         );
       }
     } catch (e) {
+      debugPrint('Sign in error: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('エラー: $e'),
+          const SnackBar(
+            content: Text('サインインに失敗しました。もう一度お試しください。'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 10),
           ),
         );
       }
