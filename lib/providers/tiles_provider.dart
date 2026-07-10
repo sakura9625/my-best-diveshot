@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/tile_data.dart';
 import '../models/best_photo.dart';
+import '../services/device_service.dart';
 import '../services/image_service.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
@@ -27,12 +29,39 @@ class TilesNotifier extends StateNotifier<Map<String, TileData>> {
       state = tiles;
 
       // DiveCloud有効時は写真をローカルに同期
+      // Providerの初期化タイミングの問題を避けるため、Firestoreから直接確認
       final diveCloud = _ref?.read(diveCloudProvider);
-      if (diveCloud?.isActive == true) {
+      final isDiveCloudActive = diveCloud?.isActive == true ||
+          await _checkDiveCloudFromFirestore();
+
+      if (isDiveCloudActive) {
         await _syncPhotosFromStorage(tiles);
       }
     } catch (e) {
       debugPrint('Firestore load error: $e');
+    }
+  }
+
+  Future<bool> _checkDiveCloudFromFirestore() async {
+    try {
+      final deviceId = await DeviceService.getDeviceId();
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(deviceId)
+          .collection('settings')
+          .doc('dive_cloud')
+          .get();
+      if (!doc.exists) return false;
+      final data = doc.data();
+      if (data == null) return false;
+      final isActive = data['isActive'] == true;
+      final expiresAt = data['expiresAt'] != null
+          ? (data['expiresAt'] as Timestamp).toDate()
+          : null;
+      return isActive && (expiresAt == null || expiresAt.isAfter(DateTime.now()));
+    } catch (e) {
+      debugPrint('Check DiveCloud error: $e');
+      return false;
     }
   }
 
