@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../constants/sheet_definitions.dart';
 import '../../constants/app_config.dart';
 import '../../providers/purchased_sheets_provider.dart';
@@ -321,6 +322,35 @@ class SheetShopScreen extends ConsumerWidget {
                                 const Text(
                                   'いつでもキャンセルできます',
                                   style: TextStyle(color: Colors.white38, fontSize: 12),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () => launchUrl(Uri.parse('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')),
+                                      child: const Text(
+                                        '利用規約',
+                                        style: TextStyle(
+                                          color: Color(0xFF00B4D8),
+                                          fontSize: 11,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ),
+                                    const Text('　|　', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                                    GestureDetector(
+                                      onTap: () => launchUrl(Uri.parse('https://sakura9625.github.io/my-best-diveshot/privacy-policy.html')),
+                                      child: const Text(
+                                        'プライバシーポリシー',
+                                        style: TextStyle(
+                                          color: Color(0xFF00B4D8),
+                                          fontSize: 11,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
